@@ -222,6 +222,72 @@ serve(async (req) => {
         );
       }
 
+      case 'send_signal': {
+        const { signalType, signalData, receiverId } = await req.json();
+        
+        if (!roomId || !signalType || !signalData || !receiverId) {
+          throw new Error('Room ID, signal type, signal data, and receiver ID required');
+        }
+
+        const { data, error } = await supabase
+          .from('webrtc_signals')
+          .insert({
+            room_id: roomId,
+            sender_id: userId,
+            receiver_id: receiverId,
+            signal_type: signalType,
+            signal_data: signalData
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        console.log('Signal sent:', signalType);
+        return new Response(
+          JSON.stringify({ success: true, signal: data }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'get_signals': {
+        if (!roomId) {
+          throw new Error('Room ID required');
+        }
+
+        const { data, error } = await supabase
+          .from('webrtc_signals')
+          .select('*')
+          .eq('room_id', roomId)
+          .eq('receiver_id', userId)
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+
+        return new Response(
+          JSON.stringify({ success: true, signals: data }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      case 'cleanup_signals': {
+        if (!roomId) {
+          throw new Error('Room ID required');
+        }
+
+        await supabase
+          .from('webrtc_signals')
+          .delete()
+          .eq('room_id', roomId)
+          .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`);
+
+        console.log('Signals cleaned up for room:', roomId);
+        return new Response(
+          JSON.stringify({ success: true }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

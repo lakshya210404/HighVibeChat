@@ -91,6 +91,44 @@ export type Database = {
         }
         Relationships: []
       }
+      webrtc_signals: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          room_id: string
+          sender_id: string
+          signal_data: Json
+          signal_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          room_id: string
+          sender_id: string
+          signal_data: Json
+          signal_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          room_id?: string
+          sender_id?: string
+          signal_data?: Json
+          signal_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webrtc_signals_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

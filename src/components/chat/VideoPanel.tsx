@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useEffect, RefObject } from "react";
 import { Leaf, Video, VideoOff } from "lucide-react";
 
 interface VideoPanelProps {
@@ -7,6 +7,9 @@ interface VideoPanelProps {
   isSearching?: boolean;
   isVideoEnabled?: boolean;
   isAudioEnabled?: boolean;
+  stream?: MediaStream | null;
+  videoRef?: RefObject<HTMLVideoElement>;
+  connectionState?: RTCPeerConnectionState;
 }
 
 const VideoPanel = ({ 
@@ -14,54 +17,21 @@ const VideoPanel = ({
   isConnected = false, 
   isSearching = false,
   isVideoEnabled = true,
-  isAudioEnabled = true 
+  isAudioEnabled = true,
+  stream = null,
+  videoRef,
+  connectionState = 'new',
 }: VideoPanelProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [hasVideo, setHasVideo] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
 
+  // Update video element when stream changes
   useEffect(() => {
-    if (isLocal && isVideoEnabled) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'user'
-        }, 
-        audio: isAudioEnabled 
-      })
-        .then((mediaStream) => {
-          setStream(mediaStream);
-          setHasVideo(true);
-          if (videoRef.current) {
-            videoRef.current.srcObject = mediaStream;
-          }
-        })
-        .catch((err) => {
-          console.error('Error accessing camera:', err);
-          setHasVideo(false);
-        });
+    if (videoRef?.current && stream) {
+      videoRef.current.srcObject = stream;
     }
+  }, [stream, videoRef]);
 
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [isLocal, isVideoEnabled, isAudioEnabled]);
-
-  useEffect(() => {
-    if (stream) {
-      const videoTrack = stream.getVideoTracks()[0];
-      if (videoTrack) {
-        videoTrack.enabled = isVideoEnabled;
-      }
-      const audioTrack = stream.getAudioTracks()[0];
-      if (audioTrack) {
-        audioTrack.enabled = isAudioEnabled;
-      }
-    }
-  }, [isVideoEnabled, isAudioEnabled, stream]);
+  const hasStream = stream && stream.getVideoTracks().length > 0;
+  const isWebRTCConnected = connectionState === 'connected';
 
   return (
     <div className={`
@@ -69,7 +39,7 @@ const VideoPanel = ({
       ${isLocal ? 'lg:max-w-xs lg:max-h-48 lg:absolute lg:bottom-4 lg:right-4 lg:z-20' : ''}
     `}>
       {/* Video element */}
-      {((isLocal && hasVideo && isVideoEnabled) || (!isLocal && isConnected)) ? (
+      {hasStream && isVideoEnabled ? (
         <video
           ref={videoRef}
           autoPlay
@@ -102,6 +72,15 @@ const VideoPanel = ({
                 </div>
                 <p className="text-muted-foreground text-xs">Camera off</p>
               </>
+            ) : !isLocal && isConnected && !isWebRTCConnected ? (
+              <>
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-full border-4 border-accent/30 border-t-accent animate-spin" />
+                  <Video className="absolute inset-0 m-auto w-6 h-6 text-accent" />
+                </div>
+                <p className="text-muted-foreground text-sm">Connecting video...</p>
+                <p className="text-muted-foreground/60 text-xs">Establishing peer connection</p>
+              </>
             ) : !isLocal && !isConnected ? (
               <>
                 <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center">
@@ -115,20 +94,19 @@ const VideoPanel = ({
       )}
 
       {/* Label */}
-      <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-background/80 backdrop-blur-sm text-xs font-medium">
+      <div className="absolute bottom-3 left-3 px-3 py-1 rounded-full bg-background/80 backdrop-blur-sm text-xs font-medium flex items-center gap-2">
         {isLocal ? 'You' : 'Stranger'}
+        {!isLocal && isWebRTCConnected && (
+          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+        )}
       </div>
 
-      {/* Video off indicator for connected state */}
-      {!isLocal && isConnected && (
-        <div className="absolute inset-0 flex items-center justify-center bg-card/90">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-20 h-20 rounded-full bg-muted/30 flex items-center justify-center">
-              <Video className="w-10 h-10 text-muted-foreground/50" />
-            </div>
-            <p className="text-muted-foreground text-sm">Video coming soon...</p>
-            <p className="text-muted-foreground/60 text-xs">WebRTC signaling in development</p>
-          </div>
+      {/* Connection state indicator for remote */}
+      {!isLocal && connectionState !== 'new' && connectionState !== 'connected' && (
+        <div className="absolute top-3 right-3 px-2 py-1 rounded-full bg-background/80 backdrop-blur-sm text-xs">
+          {connectionState === 'connecting' && <span className="text-accent">Connecting...</span>}
+          {connectionState === 'disconnected' && <span className="text-destructive">Disconnected</span>}
+          {connectionState === 'failed' && <span className="text-destructive">Failed</span>}
         </div>
       )}
     </div>
