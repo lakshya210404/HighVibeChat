@@ -5,29 +5,48 @@ import Features from "@/components/landing/Features";
 import Premium from "@/components/landing/Premium";
 import Footer from "@/components/landing/Footer";
 import ChatInterface from "@/components/chat/ChatInterface";
+import ModeSelector, { ChatMode } from "@/components/chat/ModeSelector";
+
+type AppState = 'home' | 'mode-select' | 'chat';
 
 const Index = () => {
-  const [isChatActive, setIsChatActive] = useState(false);
+  const [appState, setAppState] = useState<AppState>('home');
+  const [chatMode, setChatMode] = useState<ChatMode>('video-text');
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
 
   const handleStartChat = () => {
-    setIsChatActive(true);
+    setAppState('mode-select');
+  };
+
+  const handleSelectMode = (mode: ChatMode) => {
+    setChatMode(mode);
+    setAppState('chat');
   };
 
   const handleLeaveChat = () => {
-    setIsChatActive(false);
+    setAppState('home');
+  };
+
+  const handleBackToHome = () => {
+    setAppState('home');
   };
 
   return (
     <>
       <SmokeBackground />
       
-      {isChatActive ? (
-        <ChatInterface onLeave={handleLeaveChat} />
-      ) : (
+      {appState === 'chat' && (
+        <ChatInterface onLeave={handleLeaveChat} mode={chatMode} />
+      )}
+      
+      {appState === 'mode-select' && (
+        <ModeSelector onSelectMode={handleSelectMode} onBack={handleBackToHome} />
+      )}
+      
+      {appState === 'home' && (
         <main className="relative z-10">
           <Hero onStartChat={handleStartChat} />
           <Features />
