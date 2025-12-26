@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare } from "lucide-react";
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare, Camera } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
+import { toast } from "sonner";
 
 interface ChatInterfaceProps {
   onLeave: () => void;
@@ -46,15 +47,26 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
     isVideoEnabled,
     isAudioEnabled,
     connectionState,
+    permissionGranted,
     toggleVideo,
     toggleAudio,
     cleanup: cleanupWebRTC,
+    requestPermissions,
   } = useWebRTCCall({
     userId,
     roomId: isVideoMode && status === 'connected' ? room?.id || null : null,
     peerId: isVideoMode && status === 'connected' ? peerId : null,
     isInitiator,
   });
+
+  const handleRequestPermissions = async () => {
+    try {
+      await requestPermissions();
+      toast.success("Camera and microphone enabled!");
+    } catch (error) {
+      toast.error("Failed to access camera/microphone. Please allow permissions.");
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -155,22 +167,42 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
         {/* Video section - only show if video mode */}
         {isVideoMode && (
           <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2 relative">
-            <VideoPanel 
-              isLocal={false} 
-              isConnected={status === "connected"} 
-              isSearching={status === "searching"}
-              stream={remoteStream}
-              videoRef={remoteVideoRef}
-              connectionState={connectionState}
-            />
-            <VideoPanel 
-              isLocal={true} 
-              isConnected={status === "connected"}
-              isVideoEnabled={isVideoEnabled}
-              isAudioEnabled={isAudioEnabled}
-              stream={localStream}
-              videoRef={localVideoRef}
-            />
+            {!permissionGranted ? (
+              <div className="flex-1 flex items-center justify-center bg-muted/20 rounded-2xl">
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
+                    <Camera className="w-10 h-10 text-primary" />
+                  </div>
+                  <h3 className="text-xl font-display font-semibold">Enable Camera & Microphone</h3>
+                  <p className="text-muted-foreground max-w-sm">
+                    To start video chatting, we need access to your camera and microphone.
+                  </p>
+                  <Button onClick={handleRequestPermissions} className="gap-2">
+                    <Video className="w-4 h-4" />
+                    Allow Access
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <VideoPanel 
+                  isLocal={false} 
+                  isConnected={status === "connected"} 
+                  isSearching={status === "searching"}
+                  stream={remoteStream}
+                  videoRef={remoteVideoRef}
+                  connectionState={connectionState}
+                />
+                <VideoPanel 
+                  isLocal={true} 
+                  isConnected={status === "connected"}
+                  isVideoEnabled={isVideoEnabled}
+                  isAudioEnabled={isAudioEnabled}
+                  stream={localStream}
+                  videoRef={localVideoRef}
+                />
+              </>
+            )}
           </div>
         )}
 
@@ -273,7 +305,7 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
 
       {/* Bottom controls */}
       <div className="flex items-center justify-center gap-4 p-4 border-t border-border/50 glass-heavy">
-        {isVideoMode && (
+        {isVideoMode && permissionGranted && (
           <>
             <Button
               variant="ghost"

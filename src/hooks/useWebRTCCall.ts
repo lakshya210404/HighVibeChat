@@ -19,6 +19,7 @@ export const useWebRTCCall = ({
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
+  const [permissionGranted, setPermissionGranted] = useState(false);
   
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -171,8 +172,8 @@ export const useWebRTCCall = ({
     return pc;
   }, [isInitiator, signaling]);
 
-  const startLocalStream = useCallback(async () => {
-    console.log('[WebRTC Call] Starting local stream');
+  const requestPermissions = useCallback(async () => {
+    console.log('[WebRTC Call] Requesting camera/mic permissions');
     
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -189,17 +190,33 @@ export const useWebRTCCall = ({
       });
 
       setLocalStream(stream);
+      setPermissionGranted(true);
+      setIsVideoEnabled(true);
+      setIsAudioEnabled(true);
       
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
 
+      console.log('[WebRTC Call] Permissions granted, stream started');
       return stream;
     } catch (error) {
       console.error('[WebRTC Call] Error accessing media devices:', error);
+      setPermissionGranted(false);
       throw error;
     }
   }, []);
+
+  const startLocalStream = useCallback(async () => {
+    console.log('[WebRTC Call] Starting local stream');
+    
+    // If we already have a stream, return it
+    if (localStream) {
+      return localStream;
+    }
+    
+    return requestPermissions();
+  }, [localStream, requestPermissions]);
 
   const addLocalStreamToConnection = useCallback((stream: MediaStream) => {
     const pc = peerConnectionRef.current;
@@ -246,6 +263,7 @@ export const useWebRTCCall = ({
     
     setRemoteStream(null);
     setConnectionState('new');
+    setPermissionGranted(false);
     pendingCandidatesRef.current = [];
     hasCreatedOfferRef.current = false;
     isNegotiatingRef.current = false;
@@ -253,9 +271,9 @@ export const useWebRTCCall = ({
     signaling.cleanup();
   }, [localStream, signaling]);
 
-  // Initialize WebRTC when room and peer are available
+  // Initialize WebRTC when room and peer are available AND permission is granted
   useEffect(() => {
-    if (!roomId || !peerId) {
+    if (!roomId || !peerId || !permissionGranted || !localStream) {
       return;
     }
 
@@ -264,8 +282,7 @@ export const useWebRTCCall = ({
     const initCall = async () => {
       try {
         const pc = createPeerConnection();
-        const stream = await startLocalStream();
-        addLocalStreamToConnection(stream);
+        addLocalStreamToConnection(localStream);
         
         // If we're the initiator, wait a bit then create offer
         if (isInitiator) {
@@ -292,9 +309,19 @@ export const useWebRTCCall = ({
     initCall();
 
     return () => {
-      cleanup();
+      // Only cleanup peer connection, not the stream
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      setRemoteStream(null);
+      setConnectionState('new');
+      pendingCandidatesRef.current = [];
+      hasCreatedOfferRef.current = false;
+      isNegotiatingRef.current = false;
+      signaling.cleanup();
     };
-  }, [roomId, peerId, isInitiator]);
+  }, [roomId, peerId, isInitiator, permissionGranted, localStream]);
 
   return {
     localStream,
@@ -304,8 +331,10 @@ export const useWebRTCCall = ({
     isVideoEnabled,
     isAudioEnabled,
     connectionState,
+    permissionGranted,
     toggleVideo,
     toggleAudio,
     cleanup,
+    requestPermissions,
   };
 };
