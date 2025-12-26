@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useState, useEffect } from "react";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
@@ -9,6 +8,10 @@ import ChatInterface from "@/components/chat/ChatInterface";
 
 const Index = () => {
   const [isChatActive, setIsChatActive] = useState(false);
+
+  useEffect(() => {
+    document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
+  }, []);
 
   const handleStartChat = () => {
     setIsChatActive(true);
@@ -20,12 +23,6 @@ const Index = () => {
 
   return (
     <>
-      <Helmet>
-        <title>HighVibeChat - Anonymous Chat for Elevated Minds</title>
-        <meta name="description" content="Connect with like-minded souls instantly. Anonymous, secure, and designed for elevated conversations. No accounts, no judgment, just good vibes." />
-        <meta name="keywords" content="anonymous chat, random chat, meet strangers, chill chat, elevated conversation" />
-      </Helmet>
-
       <SmokeBackground />
       
       {isChatActive ? (
