@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
+import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
 
@@ -27,12 +28,33 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [showChat, setShowChat] = useState(mode !== 'video-only');
-  const [isVideoEnabled, setIsVideoEnabled] = useState(mode !== 'text-only');
-  const [isAudioEnabled, setIsAudioEnabled] = useState(mode !== 'text-only');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isVideoMode = mode === 'video-text' || mode === 'video-only';
   const isTextMode = mode === 'video-text' || mode === 'text-only';
+
+  // Determine peer ID and if we're the initiator
+  const peerId = room ? (room.user1_id === userId ? room.user2_id : room.user1_id) : null;
+  const isInitiator = room ? room.user1_id === userId : false;
+
+  // Initialize WebRTC call
+  const {
+    localStream,
+    remoteStream,
+    localVideoRef,
+    remoteVideoRef,
+    isVideoEnabled,
+    isAudioEnabled,
+    connectionState,
+    toggleVideo,
+    toggleAudio,
+    cleanup: cleanupWebRTC,
+  } = useWebRTCCall({
+    userId,
+    roomId: isVideoMode && status === 'connected' ? room?.id || null : null,
+    peerId: isVideoMode && status === 'connected' ? peerId : null,
+    isInitiator,
+  });
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,6 +69,7 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
     joinQueue();
     return () => {
       leaveQueue();
+      cleanupWebRTC();
     };
   }, []);
 
@@ -59,10 +82,12 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
   };
 
   const handleNext = async () => {
+    cleanupWebRTC();
     await findNext();
   };
 
   const handleLeave = async () => {
+    cleanupWebRTC();
     await leaveRoom();
     await leaveQueue();
     onLeave();
@@ -102,6 +127,9 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
             <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-sm">
               <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
               Connected
+              {isVideoMode && connectionState === 'connected' && (
+                <span className="text-xs opacity-70">(Video)</span>
+              )}
             </div>
           )}
           {status === "searching" && (
@@ -126,23 +154,28 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
       <div className="flex-1 flex overflow-hidden">
         {/* Video section - only show if video mode */}
         {isVideoMode && (
-          <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2">
+          <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2 relative">
             <VideoPanel 
               isLocal={false} 
               isConnected={status === "connected"} 
               isSearching={status === "searching"}
+              stream={remoteStream}
+              videoRef={remoteVideoRef}
+              connectionState={connectionState}
             />
             <VideoPanel 
               isLocal={true} 
               isConnected={status === "connected"}
               isVideoEnabled={isVideoEnabled}
               isAudioEnabled={isAudioEnabled}
+              stream={localStream}
+              videoRef={localVideoRef}
             />
           </div>
         )}
 
         {/* Chat sidebar/main area */}
-        {isTextMode && (
+        {isTextMode && showChat && (
           <div className={`
             ${isVideoMode ? 'w-full lg:w-96 border-l border-border/50' : 'flex-1'} 
             flex flex-col bg-card/50
@@ -245,7 +278,7 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+              onClick={toggleAudio}
               className={`w-12 h-12 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
             >
               {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
@@ -254,7 +287,7 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+              onClick={toggleVideo}
               className={`w-12 h-12 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
             >
               {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
