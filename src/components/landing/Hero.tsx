@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap, Users } from "lucide-react";
+import { useMatchmaking } from "@/hooks/useMatchmaking";
 
 interface HeroProps {
   onStartChat: () => void;
@@ -8,6 +9,7 @@ interface HeroProps {
 
 const Hero = ({ onStartChat }: HeroProps) => {
   const [isHovering, setIsHovering] = useState(false);
+  const { onlineCount } = useMatchmaking();
 
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20">
@@ -21,7 +23,7 @@ const Hero = ({ onStartChat }: HeroProps) => {
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 slide-up">
           <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-          <span className="text-sm text-muted-foreground">Anonymous • Instant • Elevated</span>
+          <span className="text-sm text-muted-foreground">Anonymous • Video & Text • Worldwide</span>
         </div>
 
         {/* Main heading */}
@@ -39,7 +41,7 @@ const Hero = ({ onStartChat }: HeroProps) => {
           className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 slide-up"
           style={{ animationDelay: "0.2s" }}
         >
-          Connect with like-minded souls in an instant. 
+          Video chat with strangers from around the world. 
           <span className="text-foreground"> No accounts. No judgment. </span>
           Just good vibes.
         </p>
@@ -81,7 +83,7 @@ const Hero = ({ onStartChat }: HeroProps) => {
         >
           <Users className="w-5 h-5 text-primary" />
           <span className="text-sm">
-            <span className="text-foreground font-semibold">420+</span> vibers online right now
+            <span className="text-foreground font-semibold">{onlineCount.toLocaleString()}+</span> vibers online right now
           </span>
         </div>
       </div>

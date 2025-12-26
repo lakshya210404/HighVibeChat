@@ -1,26 +1,32 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Loader2, Leaf } from "lucide-react";
-
-interface Message {
-  id: string;
-  text: string;
-  sender: "user" | "stranger";
-  timestamp: Date;
-}
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare } from "lucide-react";
+import { useMatchmaking } from "@/hooks/useMatchmaking";
+import VideoPanel from "./VideoPanel";
 
 interface ChatInterfaceProps {
   onLeave: () => void;
 }
 
-type ChatStatus = "searching" | "connected" | "disconnected";
-
 const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
-  const [status, setStatus] = useState<ChatStatus>("searching");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const {
+    userId,
+    status,
+    room,
+    messages,
+    joinQueue,
+    leaveQueue,
+    leaveRoom,
+    sendMessage,
+    findNext,
+  } = useMatchmaking();
+
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [showChat, setShowChat] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -31,51 +37,30 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
     scrollToBottom();
   }, [messages]);
 
-  // Simulate finding a match
+  // Start searching when component mounts
   useEffect(() => {
-    if (status === "searching") {
-      const timeout = setTimeout(() => {
-        setStatus("connected");
-        setMessages([{
-          id: crypto.randomUUID(),
-          text: "You're now chatting with a stranger. Say hi! ✌️",
-          sender: "stranger",
-          timestamp: new Date(),
-        }]);
-      }, 2000);
-      return () => clearTimeout(timeout);
-    }
-  }, [status]);
-
-  const handleSendMessage = () => {
-    if (!inputValue.trim() || status !== "connected") return;
-
-    const newMessage: Message = {
-      id: crypto.randomUUID(),
-      text: inputValue.trim(),
-      sender: "user",
-      timestamp: new Date(),
+    joinQueue();
+    return () => {
+      leaveQueue();
     };
+  }, []);
 
-    setMessages(prev => [...prev, newMessage]);
+  const handleSendMessage = async () => {
+    if (!inputValue.trim() || status !== "connected") return;
+    
+    const messageContent = inputValue.trim();
     setInputValue("");
-
-    // Simulate stranger typing and responding
-    setIsTyping(true);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: crypto.randomUUID(),
-        text: getRandomResponse(),
-        sender: "stranger",
-        timestamp: new Date(),
-      }]);
-    }, 1500 + Math.random() * 2000);
+    await sendMessage(messageContent);
   };
 
-  const handleNext = () => {
-    setStatus("searching");
-    setMessages([]);
+  const handleNext = async () => {
+    await findNext();
+  };
+
+  const handleLeave = async () => {
+    await leaveRoom();
+    await leaveQueue();
+    onLeave();
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -88,7 +73,7 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 glass-heavy">
+      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 glass-heavy z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
             <Leaf className="w-4 h-4 text-primary" />
@@ -103,135 +88,182 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
               Connected
             </div>
           )}
+          {status === "searching" && (
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 text-accent text-sm">
+              <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+              Searching...
+            </div>
+          )}
         </div>
 
         <Button
           variant="ghost"
           size="icon"
-          onClick={onLeave}
+          onClick={handleLeave}
           className="text-muted-foreground hover:text-foreground"
         >
           <X className="w-5 h-5" />
         </Button>
       </header>
 
-      {/* Chat area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {status === "searching" && (
-          <div className="flex-1 flex flex-col items-center justify-center h-full gap-4">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-              <Leaf className="absolute inset-0 m-auto w-8 h-8 text-primary" />
-            </div>
-            <p className="text-muted-foreground">Finding your vibe match...</p>
-          </div>
-        )}
+      {/* Main content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Video section */}
+        <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2">
+          <VideoPanel 
+            isLocal={false} 
+            isConnected={status === "connected"} 
+            isSearching={status === "searching"}
+          />
+          <VideoPanel 
+            isLocal={true} 
+            isConnected={status === "connected"}
+            isVideoEnabled={isVideoEnabled}
+            isAudioEnabled={isAudioEnabled}
+          />
+        </div>
 
-        {status === "disconnected" && (
-          <div className="flex-1 flex flex-col items-center justify-center h-full gap-4">
-            <p className="text-xl font-display text-muted-foreground">Stranger disconnected</p>
-            <Button onClick={handleNext} className="gap-2">
-              <SkipForward className="w-4 h-4" />
-              Find New Vibe
-            </Button>
-          </div>
-        )}
-
-        {status === "connected" && (
-          <>
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`
-                    max-w-[80%] px-4 py-3 rounded-2xl
-                    ${message.sender === "user" 
-                      ? "bg-primary text-primary-foreground rounded-br-sm" 
-                      : "bg-muted text-foreground rounded-bl-sm"
-                    }
-                  `}
-                >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
-                </div>
-              </div>
-            ))}
-
-            {isTyping && (
-              <div className="flex justify-start">
-                <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-sm">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                    <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                    <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+        {/* Chat sidebar */}
+        {showChat && (
+          <div className="w-full lg:w-96 flex flex-col border-l border-border/50 bg-card/50">
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {status === "searching" && (
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                    <Leaf className="absolute inset-0 m-auto w-6 h-6 text-primary" />
                   </div>
+                  <p className="text-muted-foreground text-sm">Finding your vibe match...</p>
+                </div>
+              )}
+
+              {status === "disconnected" && (
+                <div className="flex flex-col items-center justify-center h-full gap-4">
+                  <p className="text-lg font-display text-muted-foreground">Stranger disconnected</p>
+                  <Button onClick={handleNext} className="gap-2">
+                    <SkipForward className="w-4 h-4" />
+                    Find New Vibe
+                  </Button>
+                </div>
+              )}
+
+              {status === "connected" && (
+                <>
+                  <div className="text-center py-2">
+                    <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
+                      Connected with a stranger ✌️
+                    </span>
+                  </div>
+                  
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${message.sender_id === userId ? "justify-end" : "justify-start"}`}
+                    >
+                      <div
+                        className={`
+                          max-w-[85%] px-4 py-2.5 rounded-2xl
+                          ${message.sender_id === userId 
+                            ? "bg-primary text-primary-foreground rounded-br-sm" 
+                            : "bg-muted text-foreground rounded-bl-sm"
+                          }
+                        `}
+                      >
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {isTyping && (
+                    <div className="flex justify-start">
+                      <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-sm">
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
+            </div>
+
+            {/* Input area */}
+            {status === "connected" && (
+              <div className="p-3 border-t border-border/50">
+                <div className="flex gap-2">
+                  <Input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Type a message..."
+                    className="bg-muted/50 border-border/50 focus:border-primary rounded-xl"
+                  />
+                  <Button
+                    size="icon"
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim()}
+                    className="rounded-xl bg-primary hover:bg-primary/90"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </>
+          </div>
         )}
       </div>
 
-      {/* Input area */}
-      {status === "connected" && (
-        <div className="p-4 border-t border-border/50 glass-heavy">
-          <div className="flex gap-3 max-w-4xl mx-auto">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleNext}
-              className="flex-shrink-0 text-muted-foreground hover:text-accent hover:bg-accent/20"
-              title="Next"
-            >
-              <SkipForward className="w-5 h-5" />
-            </Button>
+      {/* Bottom controls */}
+      <div className="flex items-center justify-center gap-4 p-4 border-t border-border/50 glass-heavy">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+          className={`w-12 h-12 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+        >
+          {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </Button>
 
-            <div className="flex-1 relative">
-              <Input
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="pr-12 bg-muted/50 border-border/50 focus:border-primary rounded-xl"
-              />
-              <Button
-                size="icon"
-                onClick={handleSendMessage}
-                disabled={!inputValue.trim()}
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg bg-primary hover:bg-primary/90"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+          className={`w-12 h-12 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+        >
+          {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+        </Button>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/20"
-              title="Report"
-            >
-              <Flag className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      )}
+        <Button
+          onClick={handleNext}
+          className="px-8 py-6 rounded-full bg-primary hover:bg-primary/90 font-display font-semibold"
+        >
+          <SkipForward className="w-5 h-5 mr-2" />
+          Next
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setShowChat(!showChat)}
+          className="w-12 h-12 rounded-full bg-muted/50"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-12 h-12 rounded-full bg-muted/50 text-muted-foreground hover:text-destructive hover:bg-destructive/20"
+        >
+          <Flag className="w-5 h-5" />
+        </Button>
+      </div>
     </div>
   );
 };
-
-const responses = [
-  "Hey! What's good? 🌿",
-  "Nice vibes today, huh?",
-  "Just chilling, you?",
-  "This is pretty chill ngl",
-  "Ayy what strain you on? 😂",
-  "Love the energy here",
-  "First time on here, pretty cool app",
-  "Where you vibing from?",
-];
-
-const getRandomResponse = () => responses[Math.floor(Math.random() * responses.length)];
 
 export default ChatInterface;
