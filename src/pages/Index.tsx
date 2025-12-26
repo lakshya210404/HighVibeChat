@@ -6,16 +6,21 @@ import Premium from "@/components/landing/Premium";
 import Footer from "@/components/landing/Footer";
 import ChatInterface from "@/components/chat/ChatInterface";
 import ModeSelector, { ChatMode } from "@/components/chat/ModeSelector";
+import AgeVerification from "@/components/AgeVerification";
 
-type AppState = 'home' | 'mode-select' | 'chat';
+type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
 
 const Index = () => {
-  const [appState, setAppState] = useState<AppState>('home');
+  const [appState, setAppState] = useState<AppState>('age-verify');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
+
+  const handleAgeVerified = () => {
+    setAppState('home');
+  };
 
   const handleStartChat = () => {
     setAppState('mode-select');
@@ -37,6 +42,10 @@ const Index = () => {
   return (
     <>
       <SmokeBackground />
+      
+      {appState === 'age-verify' && (
+        <AgeVerification onVerified={handleAgeVerified} />
+      )}
       
       {appState === 'chat' && (
         <ChatInterface onLeave={handleLeaveChat} mode={chatMode} />
