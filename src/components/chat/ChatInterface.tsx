@@ -1,15 +1,17 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import VideoPanel from "./VideoPanel";
+import { ChatMode } from "./ModeSelector";
 
 interface ChatInterfaceProps {
   onLeave: () => void;
+  mode: ChatMode;
 }
 
-const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
+const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
   const {
     userId,
     status,
@@ -24,10 +26,13 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showChat, setShowChat] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [showChat, setShowChat] = useState(mode !== 'video-only');
+  const [isVideoEnabled, setIsVideoEnabled] = useState(mode !== 'text-only');
+  const [isAudioEnabled, setIsAudioEnabled] = useState(mode !== 'text-only');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const isVideoMode = mode === 'video-text' || mode === 'video-only';
+  const isTextMode = mode === 'video-text' || mode === 'text-only';
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,6 +75,14 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
     }
   };
 
+  const getModeLabel = () => {
+    switch (mode) {
+      case 'video-text': return 'Video + Text';
+      case 'video-only': return 'Video Only';
+      case 'text-only': return 'Text Only';
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
@@ -79,6 +92,9 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
             <Leaf className="w-4 h-4 text-primary" />
           </div>
           <span className="font-display font-semibold">HighVibeChat</span>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+            {getModeLabel()}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -108,24 +124,29 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
 
       {/* Main content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Video section */}
-        <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2">
-          <VideoPanel 
-            isLocal={false} 
-            isConnected={status === "connected"} 
-            isSearching={status === "searching"}
-          />
-          <VideoPanel 
-            isLocal={true} 
-            isConnected={status === "connected"}
-            isVideoEnabled={isVideoEnabled}
-            isAudioEnabled={isAudioEnabled}
-          />
-        </div>
+        {/* Video section - only show if video mode */}
+        {isVideoMode && (
+          <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2">
+            <VideoPanel 
+              isLocal={false} 
+              isConnected={status === "connected"} 
+              isSearching={status === "searching"}
+            />
+            <VideoPanel 
+              isLocal={true} 
+              isConnected={status === "connected"}
+              isVideoEnabled={isVideoEnabled}
+              isAudioEnabled={isAudioEnabled}
+            />
+          </div>
+        )}
 
-        {/* Chat sidebar */}
-        {showChat && (
-          <div className="w-full lg:w-96 flex flex-col border-l border-border/50 bg-card/50">
+        {/* Chat sidebar/main area */}
+        {isTextMode && (
+          <div className={`
+            ${isVideoMode ? 'w-full lg:w-96 border-l border-border/50' : 'flex-1'} 
+            flex flex-col bg-card/50
+          `}>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {status === "searching" && (
@@ -219,23 +240,27 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
 
       {/* Bottom controls */}
       <div className="flex items-center justify-center gap-4 p-4 border-t border-border/50 glass-heavy">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-          className={`w-12 h-12 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
-        >
-          {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
-        </Button>
+        {isVideoMode && (
+          <>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+              className={`w-12 h-12 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+            >
+              {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+            </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsVideoEnabled(!isVideoEnabled)}
-          className={`w-12 h-12 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
-        >
-          {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
-        </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsVideoEnabled(!isVideoEnabled)}
+              className={`w-12 h-12 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+            >
+              {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+            </Button>
+          </>
+        )}
 
         <Button
           onClick={handleNext}
@@ -245,14 +270,16 @@ const ChatInterface = ({ onLeave }: ChatInterfaceProps) => {
           Next
         </Button>
 
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setShowChat(!showChat)}
-          className="w-12 h-12 rounded-full bg-muted/50"
-        >
-          <MessageSquare className="w-5 h-5" />
-        </Button>
+        {isVideoMode && isTextMode && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowChat(!showChat)}
+            className={`w-12 h-12 rounded-full ${showChat ? 'bg-primary/20 text-primary' : 'bg-muted/50'}`}
+          >
+            <MessageSquare className="w-5 h-5" />
+          </Button>
+        )}
 
         <Button
           variant="ghost"
