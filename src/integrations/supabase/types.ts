@@ -24,6 +24,7 @@ export type Database = {
           is_premium: boolean | null
           looking_for: string | null
           user_id: string
+          vibe: string | null
         }
         Insert: {
           country?: string | null
@@ -34,6 +35,7 @@ export type Database = {
           is_premium?: boolean | null
           looking_for?: string | null
           user_id: string
+          vibe?: string | null
         }
         Update: {
           country?: string | null
@@ -44,6 +46,7 @@ export type Database = {
           is_premium?: boolean | null
           looking_for?: string | null
           user_id?: string
+          vibe?: string | null
         }
         Relationships: []
       }

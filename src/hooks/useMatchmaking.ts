@@ -21,7 +21,8 @@ export const useMatchmaking = (
   gender: string = 'other',
   lookingFor: string = 'everyone',
   isPremium: boolean = false,
-  countries: string[] = []
+  countries: string[] = [],
+  vibe: string | null = null
 ) => {
   const [userId] = useState(() => crypto.randomUUID());
   const [status, setStatus] = useState<'idle' | 'searching' | 'connected' | 'disconnected'>('idle');
@@ -90,7 +91,7 @@ export const useMatchmaking = (
 
     try {
       const { data, error } = await supabase.functions.invoke('matchmaking', {
-        body: { action: 'join_queue', userId, interests, gender, lookingFor, isPremium, countries }
+        body: { action: 'join_queue', userId, interests, gender, lookingFor, isPremium, countries, vibe }
       });
 
       if (error) throw error;
@@ -127,7 +128,7 @@ export const useMatchmaking = (
       console.error('Join queue error:', error);
       setStatus('idle');
     }
-  }, [userId, clearPolling, subscribeToRoom, interests, gender, lookingFor, isPremium, countries]);
+  }, [userId, clearPolling, subscribeToRoom, interests, gender, lookingFor, isPremium, countries, vibe]);
 
   const leaveRoom = useCallback(async () => {
     clearPolling();

@@ -5,6 +5,7 @@ import { useMatchmaking } from "@/hooks/useMatchmaking";
 import InterestInput from "./InterestInput";
 import OnlineCounter from "./OnlineCounter";
 import FourTwentyCountdown from "./FourTwentyCountdown";
+import SessionVibes, { SessionVibe } from "./SessionVibes";
 
 interface HeroProps {
   onStartChat: () => void;
@@ -12,6 +13,8 @@ interface HeroProps {
   onInterestsChange: (interests: string[]) => void;
   selectedCountries: string[];
   onCountriesChange: (countries: string[]) => void;
+  selectedVibe: SessionVibe;
+  onVibeChange: (vibe: SessionVibe) => void;
 }
 
 const Hero = ({
@@ -20,6 +23,8 @@ const Hero = ({
   onInterestsChange,
   selectedCountries,
   onCountriesChange,
+  selectedVibe,
+  onVibeChange,
 }: HeroProps) => {
   const [isHovering, setIsHovering] = useState(false);
   const { onlineCount } = useMatchmaking();
@@ -61,7 +66,7 @@ const Hero = ({
 
         {/* Interest Input */}
         <div 
-          className="mb-6 slide-up"
+          className="mb-4 slide-up"
           style={{ animationDelay: "0.2s" }}
         >
           <InterestInput 
@@ -69,6 +74,17 @@ const Hero = ({
             onInterestsChange={onInterestsChange}
             selectedCountries={selectedCountries}
             onCountriesChange={onCountriesChange}
+          />
+        </div>
+
+        {/* Session Vibes */}
+        <div 
+          className="mb-6 slide-up"
+          style={{ animationDelay: "0.25s" }}
+        >
+          <SessionVibes 
+            selectedVibe={selectedVibe}
+            onVibeChange={onVibeChange}
           />
         </div>
 
