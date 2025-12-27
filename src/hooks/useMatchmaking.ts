@@ -16,12 +16,13 @@ interface Message {
   created_at: string;
 }
 
-export const useMatchmaking = () => {
+export const useMatchmaking = (interests: string[] = []) => {
   const [userId] = useState(() => crypto.randomUUID());
   const [status, setStatus] = useState<'idle' | 'searching' | 'connected' | 'disconnected'>('idle');
   const [room, setRoom] = useState<Room | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineCount, setOnlineCount] = useState(420);
+  const [sharedInterests, setSharedInterests] = useState<string[]>([]);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -83,7 +84,7 @@ export const useMatchmaking = () => {
 
     try {
       const { data, error } = await supabase.functions.invoke('matchmaking', {
-        body: { action: 'join_queue', userId }
+        body: { action: 'join_queue', userId, interests }
       });
 
       if (error) throw error;
@@ -91,6 +92,7 @@ export const useMatchmaking = () => {
       if (data.matched && data.room) {
         setRoom(data.room);
         setStatus('connected');
+        if (data.sharedInterests) setSharedInterests(data.sharedInterests);
         subscribeToRoom(data.room.id);
         return;
       }
@@ -108,6 +110,7 @@ export const useMatchmaking = () => {
             clearPolling();
             setRoom(checkData.room);
             setStatus('connected');
+            if (checkData.sharedInterests) setSharedInterests(checkData.sharedInterests);
             subscribeToRoom(checkData.room.id);
           }
         } catch (err) {
@@ -118,7 +121,7 @@ export const useMatchmaking = () => {
       console.error('Join queue error:', error);
       setStatus('idle');
     }
-  }, [userId, clearPolling, subscribeToRoom]);
+  }, [userId, clearPolling, subscribeToRoom, interests]);
 
   const leaveRoom = useCallback(async () => {
     clearPolling();
@@ -213,6 +216,7 @@ export const useMatchmaking = () => {
     room,
     messages,
     onlineCount,
+    sharedInterests,
     joinQueue,
     leaveQueue,
     leaveRoom,

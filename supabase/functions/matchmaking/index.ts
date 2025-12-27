@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, userId, roomId, message } = await req.json();
+    const { action, userId, roomId, message, interests, isPremium } = await req.json();
     console.log(`Matchmaking action: ${action}, userId: ${userId}`);
 
     switch (action) {
@@ -37,11 +37,60 @@ serve(async (req) => {
           );
         }
 
-        // Check for waiting users in queue
+        // For premium users, prioritize them in matching
+        let query = supabase
+          .from('matchmaking_queue')
+          .select('*')
+          .neq('user_id', userId);
+
+        // If user has interests, try to match with users who share interests
+        const userInterests = interests || [];
+        
+        if (userInterests.length > 0) {
+          // First try to find users with matching interests
+          const { data: matchingUsers } = await supabase
+            .from('matchmaking_queue')
+            .select('*')
+            .neq('user_id', userId)
+            .overlaps('interests', userInterests)
+            .order('is_premium', { ascending: false })
+            .order('created_at', { ascending: true })
+            .limit(1);
+
+          if (matchingUsers && matchingUsers.length > 0) {
+            const matchedUser = matchingUsers[0];
+            console.log('Found interest match:', matchedUser.user_id);
+
+            const { data: newRoom, error: roomError } = await supabase
+              .from('rooms')
+              .insert({
+                user1_id: matchedUser.user_id,
+                user2_id: userId,
+                status: 'active'
+              })
+              .select()
+              .single();
+
+            if (roomError) throw roomError;
+
+            await supabase.from('matchmaking_queue').delete().eq('user_id', matchedUser.user_id);
+            await supabase.from('matchmaking_queue').delete().eq('user_id', userId);
+
+            const sharedInterests = matchedUser.interests?.filter((i: string) => userInterests.includes(i)) || [];
+
+            return new Response(
+              JSON.stringify({ success: true, room: newRoom, matched: true, sharedInterests }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        }
+
+        // Fallback: match with any waiting user (premium first)
         const { data: waitingUsers } = await supabase
           .from('matchmaking_queue')
           .select('*')
           .neq('user_id', userId)
+          .order('is_premium', { ascending: false })
           .order('created_at', { ascending: true })
           .limit(1);
 
@@ -49,7 +98,6 @@ serve(async (req) => {
           const matchedUser = waitingUsers[0];
           console.log('Found match:', matchedUser.user_id);
 
-          // Create room with both users
           const { data: newRoom, error: roomError } = await supabase
             .from('rooms')
             .insert({
@@ -60,41 +108,31 @@ serve(async (req) => {
             .select()
             .single();
 
-          if (roomError) {
-            console.error('Error creating room:', roomError);
-            throw roomError;
-          }
+          if (roomError) throw roomError;
 
-          // Remove matched user from queue
-          await supabase
-            .from('matchmaking_queue')
-            .delete()
-            .eq('user_id', matchedUser.user_id);
+          await supabase.from('matchmaking_queue').delete().eq('user_id', matchedUser.user_id);
+          await supabase.from('matchmaking_queue').delete().eq('user_id', userId);
 
-          // Remove current user from queue if they were in it
-          await supabase
-            .from('matchmaking_queue')
-            .delete()
-            .eq('user_id', userId);
+          const sharedInterests = matchedUser.interests?.filter((i: string) => userInterests.includes(i)) || [];
 
-          console.log('Room created:', newRoom.id);
           return new Response(
-            JSON.stringify({ success: true, room: newRoom, matched: true }),
+            JSON.stringify({ success: true, room: newRoom, matched: true, sharedInterests }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
 
-        // No match found, add to queue
+        // No match found, add to queue with interests
         const { error: queueError } = await supabase
           .from('matchmaking_queue')
-          .upsert({ user_id: userId }, { onConflict: 'user_id' });
+          .upsert({ 
+            user_id: userId, 
+            interests: userInterests,
+            is_premium: isPremium || false 
+          }, { onConflict: 'user_id' });
 
-        if (queueError) {
-          console.error('Error joining queue:', queueError);
-          throw queueError;
-        }
+        if (queueError) throw queueError;
 
-        console.log('User added to queue');
+        console.log('User added to queue with interests:', userInterests);
         return new Response(
           JSON.stringify({ success: true, waiting: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

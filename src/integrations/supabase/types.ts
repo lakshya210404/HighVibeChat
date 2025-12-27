@@ -18,16 +18,22 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          interests: string[] | null
+          is_premium: boolean | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
+          interests?: string[] | null
+          is_premium?: boolean | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
+          interests?: string[] | null
+          is_premium?: boolean | null
           user_id?: string
         }
         Relationships: []

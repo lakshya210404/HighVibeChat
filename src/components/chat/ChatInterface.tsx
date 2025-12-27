@@ -11,9 +11,10 @@ import { toast } from "sonner";
 interface ChatInterfaceProps {
   onLeave: () => void;
   mode: ChatMode;
+  interests?: string[];
 }
 
-const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
+const ChatInterface = ({ onLeave, mode, interests = [] }: ChatInterfaceProps) => {
   const {
     userId,
     status,
@@ -24,7 +25,7 @@ const ChatInterface = ({ onLeave, mode }: ChatInterfaceProps) => {
     leaveRoom,
     sendMessage,
     findNext,
-  } = useMatchmaking();
+  } = useMatchmaking(interests);
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
