@@ -16,8 +16,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, userId, roomId, message, interests, isPremium } = await req.json();
-    console.log(`Matchmaking action: ${action}, userId: ${userId}`);
+    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor } = await req.json();
+    console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}`);
 
     switch (action) {
       case 'join_queue': {
@@ -37,17 +37,26 @@ serve(async (req) => {
           );
         }
 
-        // For premium users, prioritize them in matching
-        let query = supabase
-          .from('matchmaking_queue')
-          .select('*')
-          .neq('user_id', userId);
-
-        // If user has interests, try to match with users who share interests
         const userInterests = interests || [];
-        
+        const userGender = gender || 'other';
+        const userLookingFor = lookingFor || 'everyone';
+        const userIsPremium = isPremium || false;
+
+        // Helper to check gender compatibility
+        const isGenderMatch = (queueUser: any) => {
+          // If current user is premium and has a preference, enforce it
+          if (userIsPremium && userLookingFor !== 'everyone') {
+            if (queueUser.gender !== userLookingFor) return false;
+          }
+          // If queue user is premium and has a preference, check if current user matches
+          if (queueUser.is_premium && queueUser.looking_for !== 'everyone') {
+            if (userGender !== queueUser.looking_for) return false;
+          }
+          return true;
+        };
+
+        // First try to find users with matching interests
         if (userInterests.length > 0) {
-          // First try to find users with matching interests
           const { data: matchingUsers } = await supabase
             .from('matchmaking_queue')
             .select('*')
@@ -55,11 +64,54 @@ serve(async (req) => {
             .overlaps('interests', userInterests)
             .order('is_premium', { ascending: false })
             .order('created_at', { ascending: true })
-            .limit(1);
+            .limit(10);
 
           if (matchingUsers && matchingUsers.length > 0) {
-            const matchedUser = matchingUsers[0];
-            console.log('Found interest match:', matchedUser.user_id);
+            // Find first gender-compatible match
+            const matchedUser = matchingUsers.find(isGenderMatch);
+            
+            if (matchedUser) {
+              console.log('Found interest + gender match:', matchedUser.user_id);
+
+              const { data: newRoom, error: roomError } = await supabase
+                .from('rooms')
+                .insert({
+                  user1_id: matchedUser.user_id,
+                  user2_id: userId,
+                  status: 'active'
+                })
+                .select()
+                .single();
+
+              if (roomError) throw roomError;
+
+              await supabase.from('matchmaking_queue').delete().eq('user_id', matchedUser.user_id);
+              await supabase.from('matchmaking_queue').delete().eq('user_id', userId);
+
+              const sharedInterests = matchedUser.interests?.filter((i: string) => userInterests.includes(i)) || [];
+
+              return new Response(
+                JSON.stringify({ success: true, room: newRoom, matched: true, sharedInterests }),
+                { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+        }
+
+        // Fallback: match with any waiting user (premium first, with gender filtering)
+        const { data: waitingUsers } = await supabase
+          .from('matchmaking_queue')
+          .select('*')
+          .neq('user_id', userId)
+          .order('is_premium', { ascending: false })
+          .order('created_at', { ascending: true })
+          .limit(20);
+
+        if (waitingUsers && waitingUsers.length > 0) {
+          const matchedUser = waitingUsers.find(isGenderMatch);
+          
+          if (matchedUser) {
+            console.log('Found gender-compatible match:', matchedUser.user_id);
 
             const { data: newRoom, error: roomError } = await supabase
               .from('rooms')
@@ -85,54 +137,20 @@ serve(async (req) => {
           }
         }
 
-        // Fallback: match with any waiting user (premium first)
-        const { data: waitingUsers } = await supabase
-          .from('matchmaking_queue')
-          .select('*')
-          .neq('user_id', userId)
-          .order('is_premium', { ascending: false })
-          .order('created_at', { ascending: true })
-          .limit(1);
-
-        if (waitingUsers && waitingUsers.length > 0) {
-          const matchedUser = waitingUsers[0];
-          console.log('Found match:', matchedUser.user_id);
-
-          const { data: newRoom, error: roomError } = await supabase
-            .from('rooms')
-            .insert({
-              user1_id: matchedUser.user_id,
-              user2_id: userId,
-              status: 'active'
-            })
-            .select()
-            .single();
-
-          if (roomError) throw roomError;
-
-          await supabase.from('matchmaking_queue').delete().eq('user_id', matchedUser.user_id);
-          await supabase.from('matchmaking_queue').delete().eq('user_id', userId);
-
-          const sharedInterests = matchedUser.interests?.filter((i: string) => userInterests.includes(i)) || [];
-
-          return new Response(
-            JSON.stringify({ success: true, room: newRoom, matched: true, sharedInterests }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // No match found, add to queue with interests
+        // No match found, add to queue with all preferences
         const { error: queueError } = await supabase
           .from('matchmaking_queue')
           .upsert({ 
             user_id: userId, 
             interests: userInterests,
-            is_premium: isPremium || false 
+            is_premium: userIsPremium,
+            gender: userGender,
+            looking_for: userLookingFor
           }, { onConflict: 'user_id' });
 
         if (queueError) throw queueError;
 
-        console.log('User added to queue with interests:', userInterests);
+        console.log('User added to queue:', { interests: userInterests, gender: userGender, lookingFor: userLookingFor });
         return new Response(
           JSON.stringify({ success: true, waiting: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

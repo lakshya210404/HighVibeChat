@@ -12,9 +12,19 @@ interface ChatInterfaceProps {
   onLeave: () => void;
   mode: ChatMode;
   interests?: string[];
+  gender?: string;
+  lookingFor?: string;
+  isPremium?: boolean;
 }
 
-const ChatInterface = ({ onLeave, mode, interests = [] }: ChatInterfaceProps) => {
+const ChatInterface = ({ 
+  onLeave, 
+  mode, 
+  interests = [],
+  gender = 'other',
+  lookingFor = 'everyone',
+  isPremium = false 
+}: ChatInterfaceProps) => {
   const {
     userId,
     status,
@@ -25,7 +35,7 @@ const ChatInterface = ({ onLeave, mode, interests = [] }: ChatInterfaceProps) =>
     leaveRoom,
     sendMessage,
     findNext,
-  } = useMatchmaking(interests);
+  } = useMatchmaking(interests, gender, lookingFor, isPremium);
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);

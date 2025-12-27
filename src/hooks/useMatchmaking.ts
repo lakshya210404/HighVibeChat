@@ -16,7 +16,12 @@ interface Message {
   created_at: string;
 }
 
-export const useMatchmaking = (interests: string[] = []) => {
+export const useMatchmaking = (
+  interests: string[] = [],
+  gender: string = 'other',
+  lookingFor: string = 'everyone',
+  isPremium: boolean = false
+) => {
   const [userId] = useState(() => crypto.randomUUID());
   const [status, setStatus] = useState<'idle' | 'searching' | 'connected' | 'disconnected'>('idle');
   const [room, setRoom] = useState<Room | null>(null);
@@ -84,7 +89,7 @@ export const useMatchmaking = (interests: string[] = []) => {
 
     try {
       const { data, error } = await supabase.functions.invoke('matchmaking', {
-        body: { action: 'join_queue', userId, interests }
+        body: { action: 'join_queue', userId, interests, gender, lookingFor, isPremium }
       });
 
       if (error) throw error;
@@ -121,7 +126,7 @@ export const useMatchmaking = (interests: string[] = []) => {
       console.error('Join queue error:', error);
       setStatus('idle');
     }
-  }, [userId, clearPolling, subscribeToRoom, interests]);
+  }, [userId, clearPolling, subscribeToRoom, interests, gender, lookingFor, isPremium]);
 
   const leaveRoom = useCallback(async () => {
     clearPolling();
