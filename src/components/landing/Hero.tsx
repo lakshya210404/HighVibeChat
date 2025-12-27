@@ -2,19 +2,26 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Zap } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
-import { Switch } from "@/components/ui/switch";
 import InterestInput from "./InterestInput";
 import OnlineCounter from "./OnlineCounter";
+import FourTwentyCountdown from "./FourTwentyCountdown";
 
 interface HeroProps {
   onStartChat: () => void;
   interests: string[];
   onInterestsChange: (interests: string[]) => void;
+  selectedCountries: string[];
+  onCountriesChange: (countries: string[]) => void;
 }
 
-const Hero = ({ onStartChat, interests, onInterestsChange }: HeroProps) => {
+const Hero = ({
+  onStartChat,
+  interests,
+  onInterestsChange,
+  selectedCountries,
+  onCountriesChange,
+}: HeroProps) => {
   const [isHovering, setIsHovering] = useState(false);
-  const [videoMode, setVideoMode] = useState(true);
   const { onlineCount } = useMatchmaking();
 
   return (
@@ -40,7 +47,7 @@ const Hero = ({ onStartChat, interests, onInterestsChange }: HeroProps) => {
           Vibe With Elevated Minds™
         </p>
 
-        {/* Online counter & Video mode toggle */}
+        {/* Online counter & 4:20 countdown */}
         <div 
           className="flex items-center justify-between mb-6 slide-up"
           style={{ animationDelay: "0.15s" }}
@@ -48,14 +55,7 @@ const Hero = ({ onStartChat, interests, onInterestsChange }: HeroProps) => {
           <div /> {/* Spacer */}
           <div className="flex flex-col items-end gap-3">
             <OnlineCounter baseCount={onlineCount} />
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">📹 Video Mode</span>
-              <Switch 
-                checked={videoMode} 
-                onCheckedChange={setVideoMode}
-                className="data-[state=checked]:bg-accent"
-              />
-            </div>
+            <FourTwentyCountdown />
           </div>
         </div>
 
@@ -67,6 +67,8 @@ const Hero = ({ onStartChat, interests, onInterestsChange }: HeroProps) => {
           <InterestInput 
             interests={interests} 
             onInterestsChange={onInterestsChange}
+            selectedCountries={selectedCountries}
+            onCountriesChange={onCountriesChange}
           />
         </div>
 

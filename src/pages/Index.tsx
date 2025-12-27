@@ -86,6 +86,8 @@ const Index = () => {
           onStartChat={handleStartChat} 
           interests={interests}
           onInterestsChange={setInterests}
+          selectedCountries={selectedCountries}
+          onCountriesChange={setSelectedCountries}
         />
         <CommunitySection />
         <Reviews />

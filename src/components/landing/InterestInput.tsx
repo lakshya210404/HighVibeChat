@@ -1,55 +1,85 @@
-import { useState, KeyboardEvent } from 'react';
-import { X, Plus, Globe } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, KeyboardEvent } from "react";
+import { X, Plus, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import CountrySelector from "./CountrySelector";
 
 interface InterestInputProps {
   interests: string[];
   onInterestsChange: (interests: string[]) => void;
+  selectedCountries?: string[];
+  onCountriesChange?: (countries: string[]) => void;
   maxInterests?: number;
 }
 
 const SUGGESTED_INTERESTS = [
-  '🎮 Gaming', '🎵 Music', '🎬 Movies', '📚 Books', '🏋️ Fitness',
-  '🎨 Art', '💻 Tech', '🌿 Nature', '🍕 Food', '✈️ Travel',
-  '🐱 Pets', '⚽ Sports', '🎭 Comedy', '🔬 Science', '🎲 420'
+  "🎮 Gaming",
+  "🎵 Music",
+  "🎬 Movies",
+  "📚 Books",
+  "🏋️ Fitness",
+  "🎨 Art",
+  "💻 Tech",
+  "🌿 Nature",
+  "🍕 Food",
+  "✈️ Travel",
+  "🐱 Pets",
+  "⚽ Sports",
+  "🎭 Comedy",
+  "🔬 Science",
+  "🎲 420",
 ];
 
-const InterestInput = ({ interests, onInterestsChange, maxInterests = 5 }: InterestInputProps) => {
-  const [inputValue, setInputValue] = useState('');
+const InterestInput = ({
+  interests,
+  onInterestsChange,
+  selectedCountries = [],
+  onCountriesChange = () => {},
+  maxInterests = 5,
+}: InterestInputProps) => {
+  const [inputValue, setInputValue] = useState("");
   const [showAll, setShowAll] = useState(false);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
 
   const addInterest = (interest: string) => {
     const trimmed = interest.trim();
     if (trimmed && !interests.includes(trimmed) && interests.length < maxInterests) {
       onInterestsChange([...interests, trimmed]);
-      setInputValue('');
+      setInputValue("");
     }
   };
 
   const removeInterest = (interest: string) => {
-    onInterestsChange(interests.filter(i => i !== interest));
+    onInterestsChange(interests.filter((i) => i !== interest));
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       e.preventDefault();
       addInterest(inputValue);
     }
   };
 
-  const availableSuggestions = SUGGESTED_INTERESTS.filter(i => !interests.includes(i));
+  const availableSuggestions = SUGGESTED_INTERESTS.filter((i) => !interests.includes(i));
   const displayedSuggestions = showAll ? availableSuggestions : availableSuggestions.slice(0, 6);
 
   return (
     <div className="w-full space-y-4">
-      {/* Category Badge */}
-      <div className="flex items-center gap-2">
-        <Badge variant="outline" className="glass px-3 py-1.5 gap-2">
-          <Globe className="w-4 h-4 text-primary" />
-          <span>ALL</span>
-        </Badge>
+      {/* Country Picker */}
+      <div className="flex items-center justify-between gap-3">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="glass border-border/50 hover:border-primary/50"
+          onClick={() => setShowCountrySelector(true)}
+        >
+          <Globe className="w-4 h-4 mr-2 text-primary" />
+          {selectedCountries.length === 0 ? "Worldwide" : `${selectedCountries.length} countries`}
+        </Button>
+        <p className="text-xs text-muted-foreground">Pick where your next sesh comes from</p>
       </div>
 
       {/* Input Field */}
@@ -74,9 +104,9 @@ const InterestInput = ({ interests, onInterestsChange, maxInterests = 5 }: Inter
       {/* Selected Interests */}
       <AnimatePresence mode="popLayout">
         {interests.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="flex flex-wrap gap-2"
           >
@@ -88,8 +118,8 @@ const InterestInput = ({ interests, onInterestsChange, maxInterests = 5 }: Inter
                 exit={{ opacity: 0, scale: 0.8 }}
                 layout
               >
-                <Badge 
-                  variant="secondary" 
+                <Badge
+                  variant="secondary"
                   className="px-3 py-1.5 text-sm bg-primary/20 text-primary border-primary/30 hover:bg-primary/30 cursor-pointer group"
                   onClick={() => removeInterest(interest)}
                 >
@@ -123,7 +153,7 @@ const InterestInput = ({ interests, onInterestsChange, maxInterests = 5 }: Inter
                 onClick={() => setShowAll(!showAll)}
                 className="px-3 py-1.5 text-sm text-primary hover:underline"
               >
-                {showAll ? 'Show less' : `+${availableSuggestions.length - 6} more`}
+                {showAll ? "Show less" : `+${availableSuggestions.length - 6} more`}
               </button>
             )}
           </div>
@@ -134,6 +164,13 @@ const InterestInput = ({ interests, onInterestsChange, maxInterests = 5 }: Inter
       <p className="text-xs text-muted-foreground text-right">
         {interests.length}/{maxInterests} interests
       </p>
+
+      <CountrySelector
+        selectedCountries={selectedCountries}
+        onCountriesChange={onCountriesChange}
+        isOpen={showCountrySelector}
+        onClose={() => setShowCountrySelector(false)}
+      />
     </div>
   );
 };
