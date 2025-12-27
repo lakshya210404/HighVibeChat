@@ -1,159 +1,301 @@
-import { User, Bell, Shield, Info, ExternalLink, Mail } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
-import { motion } from 'framer-motion';
 import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { motion } from 'framer-motion';
 import { toast } from 'sonner';
+import { 
+  Shield, Volume2, User, Users, Globe, Clock, 
+  Lock, Bell, ExternalLink, Mail, Leaf
+} from 'lucide-react';
 
-const SettingsPanel = () => {
-  const [notifications, setNotifications] = useState(true);
-  const [soundEffects, setSoundEffects] = useState(true);
+export type Gender = 'male' | 'female' | 'other';
+export type LookingFor = 'everyone' | 'male' | 'female' | 'other';
+
+interface SettingsPanelProps {
+  gender: Gender;
+  lookingFor: LookingFor;
+  onGenderChange: (gender: Gender) => void;
+  onLookingForChange: (lookingFor: LookingFor) => void;
+  isPremium?: boolean;
+}
+
+const SettingsPanel = ({ 
+  gender, 
+  lookingFor, 
+  onGenderChange, 
+  onLookingForChange,
+  isPremium = false 
+}: SettingsPanelProps) => {
+  const [privacyMode, setPrivacyMode] = useState(false);
+  const [sfxVolume, setSfxVolume] = useState(true);
+  const [autoRollVideo, setAutoRollVideo] = useState(true);
+  const [autoRollText, setAutoRollText] = useState(false);
+  const [countryFilter, setCountryFilter] = useState(false);
+  const [filterMaxWait, setFilterMaxWait] = useState([3]);
 
   const handleGoogleSignIn = () => {
-    toast.info('Google Sign-In coming soon! 🔐', {
-      description: 'Stay anonymous or create an account.'
+    toast.info('Sign-in coming soon! 🌿', {
+      description: 'Create an account to unlock premium vibes.'
     });
   };
-
-  const handleEmailSignIn = () => {
-    toast.info('Email Sign-In coming soon! 📧', {
-      description: 'Create an account to save preferences.'
-    });
-  };
-
-  const settingSections = [
-    {
-      title: 'Account',
-      items: [
-        {
-          icon: User,
-          label: 'Sign in with Google',
-          action: handleGoogleSignIn,
-          type: 'button' as const
-        },
-        {
-          icon: Mail,
-          label: 'Sign in with Email',
-          action: handleEmailSignIn,
-          type: 'button' as const
-        }
-      ]
-    },
-    {
-      title: 'Preferences',
-      items: [
-        {
-          icon: Bell,
-          label: 'Notifications',
-          value: notifications,
-          onChange: setNotifications,
-          type: 'switch' as const
-        },
-        {
-          icon: Shield,
-          label: 'Sound Effects',
-          value: soundEffects,
-          onChange: setSoundEffects,
-          type: 'switch' as const
-        }
-      ]
-    },
-    {
-      title: 'About',
-      items: [
-        {
-          icon: Info,
-          label: 'Terms of Service',
-          href: '#',
-          type: 'link' as const
-        },
-        {
-          icon: Shield,
-          label: 'Privacy Policy',
-          href: '#',
-          type: 'link' as const
-        }
-      ]
-    }
-  ];
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col px-4 py-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md mx-auto"
+        className="w-full max-w-lg mx-auto"
       >
-        <h2 className="font-display text-3xl font-bold text-center mb-8">
-          Settings
-        </h2>
+        <div className="flex items-center justify-center gap-2 mb-6">
+          <Leaf className="w-6 h-6 text-primary" />
+          <h2 className="font-display text-3xl font-bold text-center">
+            Settings
+          </h2>
+        </div>
 
-        <div className="space-y-6">
-          {settingSections.map((section, sectionIndex) => (
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 glass mb-6">
+            <TabsTrigger value="general" className="text-xs sm:text-sm">General</TabsTrigger>
+            <TabsTrigger value="matching" className="text-xs sm:text-sm">Matching</TabsTrigger>
+            <TabsTrigger value="filters" className="text-xs sm:text-sm">Filters</TabsTrigger>
+            <TabsTrigger value="profile" className="text-xs sm:text-sm">Profile</TabsTrigger>
+          </TabsList>
+
+          {/* General Tab */}
+          <TabsContent value="general" className="space-y-4">
             <motion.div
-              key={section.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: sectionIndex * 0.1 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
             >
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                {section.title}
-              </h3>
+              {/* Privacy */}
               <div className="space-y-2">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  
-                  if (item.type === 'switch') {
-                    return (
-                      <div
-                        key={item.label}
-                        className="flex items-center justify-between p-4 rounded-xl glass border border-border/50"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5 text-muted-foreground" />
-                          <span className="font-medium">{item.label}</span>
-                        </div>
-                        <Switch
-                          checked={item.value}
-                          onCheckedChange={item.onChange}
-                        />
-                      </div>
-                    );
-                  }
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Shield className="w-4 h-4" />
+                  <span>Privacy</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Privacy Mode ({privacyMode ? 'ON' : 'OFF'})</p>
+                      <p className="text-sm text-muted-foreground">Hide your details from partners</p>
+                    </div>
+                    <Switch 
+                      checked={privacyMode} 
+                      onCheckedChange={setPrivacyMode}
+                      className="data-[state=checked]:bg-accent"
+                    />
+                  </div>
+                </div>
+              </div>
 
-                  if (item.type === 'button') {
-                    return (
-                      <button
-                        key={item.label}
-                        onClick={item.action}
-                        className="w-full flex items-center justify-between p-4 rounded-xl glass border border-border/50 hover:border-primary/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5 text-muted-foreground" />
-                          <span className="font-medium">{item.label}</span>
-                        </div>
-                        <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    );
-                  }
+              {/* Volume */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Volume2 className="w-4 h-4" />
+                  <span>Volume</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">SFX Volume ({sfxVolume ? 'ON' : 'OFF'})</p>
+                      <p className="text-sm text-muted-foreground">Toggle sound effects on or off</p>
+                    </div>
+                    <Switch 
+                      checked={sfxVolume} 
+                      onCheckedChange={setSfxVolume}
+                      className="data-[state=checked]:bg-accent"
+                    />
+                  </div>
+                </div>
+              </div>
 
-                  return (
-                    <a
-                      key={item.label}
-                      href={item.href}
-                      className="flex items-center justify-between p-4 rounded-xl glass border border-border/50 hover:border-primary/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-5 h-5 text-muted-foreground" />
-                        <span className="font-medium">{item.label}</span>
-                      </div>
-                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                    </a>
-                  );
-                })}
+              {/* Sign In Options */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <User className="w-4 h-4" />
+                  <span>Account</span>
+                </div>
+                <div className="space-y-2">
+                  <button
+                    onClick={handleGoogleSignIn}
+                    className="w-full flex items-center justify-between p-4 rounded-xl glass border border-border/50 hover:border-primary/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Mail className="w-5 h-5 text-muted-foreground" />
+                      <span className="font-medium">Sign in with Google</span>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                </div>
               </div>
             </motion.div>
-          ))}
-        </div>
+          </TabsContent>
+
+          {/* Matching Tab */}
+          <TabsContent value="matching" className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Leaf className="w-4 h-4" />
+                  <span>Auto-Roll</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Video ({autoRollVideo ? 'ON' : 'OFF'})</p>
+                      <p className="text-sm text-muted-foreground">Auto find new match in video mode</p>
+                    </div>
+                    <Switch 
+                      checked={autoRollVideo} 
+                      onCheckedChange={setAutoRollVideo}
+                      className="data-[state=checked]:bg-accent"
+                    />
+                  </div>
+                  <div className="border-t border-border/50" />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">Text ({autoRollText ? 'ON' : 'OFF'})</p>
+                      <p className="text-sm text-muted-foreground">Auto find new match in text mode</p>
+                    </div>
+                    <Switch 
+                      checked={autoRollText} 
+                      onCheckedChange={setAutoRollText}
+                      className="data-[state=checked]:bg-accent"
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          {/* Filters Tab */}
+          <TabsContent value="filters" className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Globe className="w-4 h-4" />
+                  <span>Country Filter ({countryFilter ? 'ON' : 'OFF'})</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50">
+                  <Button
+                    variant="outline"
+                    className="border-accent text-accent hover:bg-accent/10"
+                    onClick={() => toast.info('Country filter coming soon! 🌍')}
+                  >
+                    Select Countries
+                  </Button>
+                  <p className="text-sm text-muted-foreground mt-2">Only match to countries you select</p>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Clock className="w-4 h-4" />
+                  <span>Filters Max Wait</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50">
+                  <p className="font-medium mb-4">{filterMaxWait[0]}s</p>
+                  <Slider
+                    value={filterMaxWait}
+                    onValueChange={setFilterMaxWait}
+                    min={1}
+                    max={30}
+                    step={1}
+                    className="w-full"
+                  />
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Maximum time to wait for someone in your filters
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-4">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              {/* Your Gender */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <User className="w-4 h-4 text-destructive" />
+                  <span>Your Vibe</span>
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50">
+                  <RadioGroup value={gender} onValueChange={(v) => onGenderChange(v as Gender)} className="flex gap-6">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="male" className="border-accent data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground" />
+                      <Label htmlFor="male">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="female" id="female" className="border-accent data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground" />
+                      <Label htmlFor="female">Female</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="other" id="other" className="border-accent data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground" />
+                      <Label htmlFor="other">Other</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+
+              {/* Looking For */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                  <Users className="w-4 h-4 text-secondary" />
+                  <span>Looking For</span>
+                  {!isPremium && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-accent/20 text-accent">Premium</span>
+                  )}
+                </div>
+                <div className="p-4 rounded-xl glass border border-border/50 relative">
+                  {!isPremium && (
+                    <div className="absolute inset-0 bg-card/80 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
+                      <div className="text-center">
+                        <Lock className="w-6 h-6 text-accent mx-auto mb-2" />
+                        <p className="text-sm text-muted-foreground">Boost to unlock gender filters</p>
+                      </div>
+                    </div>
+                  )}
+                  <RadioGroup value={lookingFor} onValueChange={(v) => onLookingForChange(v as LookingFor)} className="flex flex-wrap gap-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="everyone" id="everyone" className="border-accent data-[state=checked]:bg-accent" />
+                      <Label htmlFor="everyone">Everyone</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="male" id="lookingMale" className="border-accent data-[state=checked]:bg-accent" />
+                      <Label htmlFor="lookingMale">Male</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="female" id="lookingFemale" className="border-accent data-[state=checked]:bg-accent" />
+                      <Label htmlFor="lookingFemale">Female</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="other" id="lookingOther" className="border-accent data-[state=checked]:bg-accent" />
+                      <Label htmlFor="lookingOther">Other</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+            </motion.div>
+          </TabsContent>
+        </Tabs>
 
         <motion.p
           initial={{ opacity: 0 }}
@@ -161,7 +303,7 @@ const SettingsPanel = () => {
           transition={{ delay: 0.5 }}
           className="text-center text-xs text-muted-foreground mt-8"
         >
-          HighVibeChat v1.0 • Made with 💚
+          HighVibeChat v1.0 • Made with 🌿
         </motion.p>
       </motion.div>
     </div>
