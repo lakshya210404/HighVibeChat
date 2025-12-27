@@ -39,11 +39,11 @@ const ChatInterface = ({
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [showChat, setShowChat] = useState(mode !== 'video-only');
+  const [showChat, setShowChat] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const isVideoMode = mode === 'video-text' || mode === 'video-only';
-  const isTextMode = mode === 'video-text' || mode === 'text-only';
+  const isVideoMode = mode === 'video-text';
+  const isTextMode = true; // Text is always available
 
   // Determine peer ID and if we're the initiator
   const peerId = room ? (room.user1_id === userId ? room.user2_id : room.user1_id) : null;
@@ -125,9 +125,8 @@ const ChatInterface = ({
 
   const getModeLabel = () => {
     switch (mode) {
-      case 'video-text': return 'Video + Text';
-      case 'video-only': return 'Video Only';
-      case 'text-only': return 'Text Only';
+      case 'video-text': return 'Video Sesh';
+      case 'text-only': return 'Text Sesh';
     }
   };
 
