@@ -16,8 +16,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor, countries } = await req.json();
-    console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}, countries: ${countries?.length || 0}`);
+    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor, countries, vibe } = await req.json();
+    console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}, countries: ${countries?.length || 0}, vibe: ${vibe}`);
 
     switch (action) {
       case 'join_queue': {
@@ -42,6 +42,7 @@ serve(async (req) => {
         const userLookingFor = lookingFor || 'everyone';
         const userIsPremium = isPremium || false;
         const userCountries: string[] = countries || [];
+        const userVibe: string | null = vibe || null;
 
         // Helper to check gender compatibility
         const isGenderMatch = (queueUser: any) => {
@@ -65,17 +66,35 @@ serve(async (req) => {
               return false;
             }
           }
-          // If queue user is premium and has country preferences
-          if (queueUser.is_premium && queueUser.countries && queueUser.countries.length > 0) {
-            // We need to match their country preference (but we don't store user's actual country yet)
-            // For now, skip this check - they can match with anyone
+          return true;
+        };
+
+        // Helper to check vibe compatibility - prioritize same vibes
+        const isVibeMatch = (queueUser: any) => {
+          // If both users have a vibe set, they must match for priority
+          if (userVibe && queueUser.vibe) {
+            return userVibe === queueUser.vibe;
           }
+          // If only one has a vibe, still allow match but lower priority
           return true;
         };
 
         // Combined compatibility check
         const isCompatible = (queueUser: any) => {
           return isGenderMatch(queueUser) && isCountryMatch(queueUser);
+        };
+
+        // Score function for sorting - higher is better match
+        const getMatchScore = (queueUser: any) => {
+          let score = 0;
+          // Same vibe = highest priority
+          if (userVibe && queueUser.vibe === userVibe) score += 100;
+          // Has shared interests
+          const sharedCount = queueUser.interests?.filter((i: string) => userInterests.includes(i)).length || 0;
+          score += sharedCount * 10;
+          // Premium users get slight boost
+          if (queueUser.is_premium) score += 5;
+          return score;
         };
 
         // First try to find users with matching interests
@@ -90,11 +109,15 @@ serve(async (req) => {
             .limit(10);
 
           if (matchingUsers && matchingUsers.length > 0) {
-            // Find first compatible match (gender + country)
-            const matchedUser = matchingUsers.find(isCompatible);
+            // Filter compatible users and sort by match score
+            const compatibleUsers = matchingUsers
+              .filter(isCompatible)
+              .sort((a, b) => getMatchScore(b) - getMatchScore(a));
+            
+            const matchedUser = compatibleUsers[0];
             
             if (matchedUser) {
-              console.log('Found interest + compatible match:', matchedUser.user_id);
+              console.log('Found interest + compatible match:', matchedUser.user_id, 'vibe:', matchedUser.vibe);
 
               const { data: newRoom, error: roomError } = await supabase
                 .from('rooms')
@@ -131,10 +154,15 @@ serve(async (req) => {
           .limit(30);
 
         if (waitingUsers && waitingUsers.length > 0) {
-          const matchedUser = waitingUsers.find(isCompatible);
+          // Filter compatible users and sort by match score
+          const compatibleUsers = waitingUsers
+            .filter(isCompatible)
+            .sort((a, b) => getMatchScore(b) - getMatchScore(a));
+          
+          const matchedUser = compatibleUsers[0];
           
           if (matchedUser) {
-            console.log('Found compatible match:', matchedUser.user_id);
+            console.log('Found compatible match:', matchedUser.user_id, 'vibe:', matchedUser.vibe);
 
             const { data: newRoom, error: roomError } = await supabase
               .from('rooms')
@@ -172,12 +200,13 @@ serve(async (req) => {
             is_premium: userIsPremium,
             gender: userGender,
             looking_for: userLookingFor,
-            country: userCountry
+            country: userCountry,
+            vibe: userVibe
           }, { onConflict: 'user_id' });
 
         if (queueError) throw queueError;
 
-        console.log('User added to queue:', { interests: userInterests, gender: userGender, lookingFor: userLookingFor, country: userCountry });
+        console.log('User added to queue:', { interests: userInterests, gender: userGender, lookingFor: userLookingFor, country: userCountry, vibe: userVibe });
         return new Response(
           JSON.stringify({ success: true, waiting: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

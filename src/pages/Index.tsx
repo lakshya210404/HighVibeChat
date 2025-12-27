@@ -15,6 +15,7 @@ import BottomNav from "@/components/landing/BottomNav";
 import ThemeSelector from "@/components/landing/ThemeSelector";
 import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
+import { SessionVibe } from "@/components/landing/SessionVibes";
 
 type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings';
@@ -28,6 +29,7 @@ const Index = () => {
   const [lookingFor, setLookingFor] = useState<LookingFor>('everyone');
   const [isPremium, setIsPremium] = useState(false);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
@@ -89,6 +91,8 @@ const Index = () => {
           onInterestsChange={setInterests}
           selectedCountries={selectedCountries}
           onCountriesChange={setSelectedCountries}
+          selectedVibe={selectedVibe}
+          onVibeChange={setSelectedVibe}
         />
         <CommunitySection />
         <Reviews />
@@ -117,6 +121,7 @@ const Index = () => {
           lookingFor={lookingFor}
           isPremium={isPremium}
           selectedCountries={selectedCountries}
+          selectedVibe={selectedVibe}
         />
       )}
       
