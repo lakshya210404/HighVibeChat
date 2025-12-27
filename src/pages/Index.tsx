@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import SmokeBackground from "@/components/ui/SmokeBackground";
+import CannabisParticles from "@/components/landing/CannabisParticles";
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
 import Premium from "@/components/landing/Premium";
 import Footer from "@/components/landing/Footer";
 import Reviews from "@/components/landing/Reviews";
+import CommunitySection from "@/components/landing/CommunitySection";
 import ChatInterface from "@/components/chat/ChatInterface";
 import ModeSelector, { ChatMode } from "@/components/chat/ModeSelector";
 import AgeVerification from "@/components/AgeVerification";
@@ -14,7 +16,7 @@ import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 
 type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
-type NavTab = 'home' | 'boost' | 'theme' | 'settings';
+type NavTab = 'home' | 'elevate' | 'theme' | 'settings';
 
 const Index = () => {
   const [appState, setAppState] = useState<AppState>('age-verify');
@@ -24,6 +26,7 @@ const Index = () => {
   const [gender, setGender] = useState<Gender>('other');
   const [lookingFor, setLookingFor] = useState<LookingFor>('everyone');
   const [isPremium, setIsPremium] = useState(false);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
@@ -60,7 +63,7 @@ const Index = () => {
     if (activeTab === 'theme') {
       return <ThemeSelector />;
     }
-    if (activeTab === 'boost') {
+    if (activeTab === 'elevate') {
       return <BoostPanel />;
     }
     if (activeTab === 'settings') {
@@ -71,6 +74,8 @@ const Index = () => {
           onGenderChange={setGender}
           onLookingForChange={setLookingFor}
           isPremium={isPremium}
+          selectedCountries={selectedCountries}
+          onCountriesChange={setSelectedCountries}
         />
       );
     }
@@ -82,6 +87,7 @@ const Index = () => {
           interests={interests}
           onInterestsChange={setInterests}
         />
+        <CommunitySection />
         <Reviews />
         <Features />
         <Premium />
@@ -93,7 +99,7 @@ const Index = () => {
   return (
     <>
       <SmokeBackground />
-      
+      <CannabisParticles />
       {appState === 'age-verify' && (
         <AgeVerification onVerified={handleAgeVerified} />
       )}

@@ -11,6 +11,7 @@ import {
   Shield, Volume2, User, Users, Globe, Clock, 
   Lock, Bell, ExternalLink, Mail, Leaf
 } from 'lucide-react';
+import CountrySelector from './CountrySelector';
 
 export type Gender = 'male' | 'female' | 'other';
 export type LookingFor = 'everyone' | 'male' | 'female' | 'other';
@@ -21,6 +22,8 @@ interface SettingsPanelProps {
   onGenderChange: (gender: Gender) => void;
   onLookingForChange: (lookingFor: LookingFor) => void;
   isPremium?: boolean;
+  selectedCountries?: string[];
+  onCountriesChange?: (countries: string[]) => void;
 }
 
 const SettingsPanel = ({ 
@@ -28,7 +31,9 @@ const SettingsPanel = ({
   lookingFor, 
   onGenderChange, 
   onLookingForChange,
-  isPremium = false 
+  isPremium = false,
+  selectedCountries = [],
+  onCountriesChange = () => {}
 }: SettingsPanelProps) => {
   const [privacyMode, setPrivacyMode] = useState(false);
   const [sfxVolume, setSfxVolume] = useState(true);
@@ -36,6 +41,7 @@ const SettingsPanel = ({
   const [autoRollText, setAutoRollText] = useState(false);
   const [countryFilter, setCountryFilter] = useState(false);
   const [filterMaxWait, setFilterMaxWait] = useState([3]);
+  const [showCountrySelector, setShowCountrySelector] = useState(false);
 
   const handleGoogleSignIn = () => {
     toast.info('Sign-in coming soon! 🌿', {
@@ -187,17 +193,23 @@ const SettingsPanel = ({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <Globe className="w-4 h-4" />
-                  <span>Country Filter ({countryFilter ? 'ON' : 'OFF'})</span>
+                  <span>Country Filter</span>
                 </div>
                 <div className="p-4 rounded-xl glass border border-border/50">
                   <Button
                     variant="outline"
-                    className="border-accent text-accent hover:bg-accent/10"
-                    onClick={() => toast.info('Country filter coming soon! 🌍')}
+                    className="border-primary text-primary hover:bg-primary/10 w-full"
+                    onClick={() => setShowCountrySelector(true)}
                   >
-                    Select Countries
+                    <Globe className="w-4 h-4 mr-2" />
+                    {selectedCountries.length === 0 
+                      ? "All Countries (Worldwide)" 
+                      : `${selectedCountries.length} Countries Selected`
+                    }
                   </Button>
-                  <p className="text-sm text-muted-foreground mt-2">Only match to countries you select</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Match with stoners from specific countries only
+                  </p>
                 </div>
               </div>
 
@@ -306,6 +318,13 @@ const SettingsPanel = ({
           HighVibeChat v1.0 • Made with 🌿
         </motion.p>
       </motion.div>
+
+      <CountrySelector
+        selectedCountries={selectedCountries}
+        onCountriesChange={onCountriesChange}
+        isOpen={showCountrySelector}
+        onClose={() => setShowCountrySelector(false)}
+      />
     </div>
   );
 };
