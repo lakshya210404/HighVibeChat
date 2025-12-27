@@ -114,6 +114,7 @@ const Index = () => {
           gender={gender}
           lookingFor={lookingFor}
           isPremium={isPremium}
+          selectedCountries={selectedCountries}
         />
       )}
       
