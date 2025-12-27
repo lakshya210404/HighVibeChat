@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Zap, Users } from "lucide-react";
+import { Sparkles, Zap } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
+import { Switch } from "@/components/ui/switch";
+import InterestInput from "./InterestInput";
+import OnlineCounter from "./OnlineCounter";
 
 interface HeroProps {
   onStartChat: () => void;
+  interests: string[];
+  onInterestsChange: (interests: string[]) => void;
 }
 
-const Hero = ({ onStartChat }: HeroProps) => {
+const Hero = ({ onStartChat, interests, onInterestsChange }: HeroProps) => {
   const [isHovering, setIsHovering] = useState(false);
+  const [videoMode, setVideoMode] = useState(true);
   const { onlineCount } = useMatchmaking();
 
   return (
@@ -19,32 +25,50 @@ const Hero = ({ onStartChat }: HeroProps) => {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[150px] animate-breathe" />
 
       {/* Main content */}
-      <div className="relative z-10 text-center max-w-4xl mx-auto">
-        {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8 slide-up">
-          <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
-          <span className="text-sm text-muted-foreground">Anonymous • Video & Text • Worldwide</span>
-        </div>
-
-        {/* Main heading */}
+      <div className="relative z-10 text-center max-w-lg mx-auto w-full">
+        {/* Logo & Tagline */}
         <h1 
-          className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold mb-6 slide-up"
+          className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-2 slide-up"
+        >
+          <span className="text-gradient glow-text">HighVibe</span>
+          <span className="text-foreground">Chat</span>
+        </h1>
+        <p 
+          className="text-muted-foreground italic mb-8 slide-up"
           style={{ animationDelay: "0.1s" }}
         >
-          <span className="text-foreground">Meet</span>
-          <br />
-          <span className="text-gradient glow-text">Higher Minds</span>
-        </h1>
+          Vibe With Elevated Minds™
+        </p>
 
-        {/* Subheading */}
-        <p 
-          className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto mb-12 slide-up"
+        {/* Online counter & Video mode toggle */}
+        <div 
+          className="flex items-center justify-between mb-6 slide-up"
+          style={{ animationDelay: "0.15s" }}
+        >
+          <div /> {/* Spacer */}
+          <div className="flex flex-col items-end gap-3">
+            <OnlineCounter baseCount={onlineCount} />
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">📹 Video Mode</span>
+              <Switch 
+                checked={videoMode} 
+                onCheckedChange={setVideoMode}
+                className="data-[state=checked]:bg-accent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Interest Input */}
+        <div 
+          className="mb-6 slide-up"
           style={{ animationDelay: "0.2s" }}
         >
-          Video chat with strangers from around the world. 
-          <span className="text-foreground"> No accounts. No judgment. </span>
-          Just good vibes.
-        </p>
+          <InterestInput 
+            interests={interests} 
+            onInterestsChange={onInterestsChange}
+          />
+        </div>
 
         {/* CTA Button */}
         <div 
@@ -56,44 +80,33 @@ const Hero = ({ onStartChat }: HeroProps) => {
             onMouseEnter={() => setIsHovering(true)}
             onMouseLeave={() => setIsHovering(false)}
             className={`
-              relative group px-10 py-7 text-xl font-display font-semibold
-              bg-primary hover:bg-primary/90 text-primary-foreground
+              relative group w-full px-10 py-8 text-xl font-display font-semibold
+              bg-accent hover:bg-accent/90 text-accent-foreground
               rounded-2xl transition-all duration-500
-              ${isHovering ? 'scale-105 glow-primary' : 'scale-100'}
+              ${isHovering ? 'scale-[1.02] glow-primary' : 'scale-100'}
             `}
           >
-            <span className="relative z-10 flex items-center gap-3">
+            <span className="relative z-10 flex items-center justify-center gap-3">
               <Sparkles className={`w-6 h-6 transition-transform duration-300 ${isHovering ? 'rotate-12' : ''}`} />
-              Start Vibing
+              Start
               <Zap className={`w-5 h-5 transition-transform duration-300 ${isHovering ? 'translate-x-1' : ''}`} />
             </span>
             
             {/* Button glow effect */}
             <div className={`
-              absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-secondary to-accent
+              absolute inset-0 rounded-2xl bg-gradient-to-r from-accent via-primary to-secondary
               opacity-0 group-hover:opacity-30 blur-xl transition-opacity duration-500
             `} />
           </Button>
         </div>
 
-        {/* Live counter */}
-        <div 
-          className="mt-12 flex items-center justify-center gap-3 text-muted-foreground slide-up"
+        {/* Subtext */}
+        <p 
+          className="mt-6 text-sm text-muted-foreground slide-up"
           style={{ animationDelay: "0.4s" }}
         >
-          <Users className="w-5 h-5 text-primary" />
-          <span className="text-sm">
-            <span className="text-foreground font-semibold">{onlineCount.toLocaleString()}+</span> vibers online right now
-          </span>
-        </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/50">
-        <span className="text-xs uppercase tracking-widest">Explore</span>
-        <div className="w-6 h-10 rounded-full border-2 border-muted-foreground/30 flex items-start justify-center p-2">
-          <div className="w-1.5 h-3 bg-primary rounded-full animate-bounce" />
-        </div>
+          Anonymous • Instant • Worldwide
+        </p>
       </div>
     </section>
   );

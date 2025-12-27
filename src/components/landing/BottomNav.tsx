@@ -1,0 +1,64 @@
+import { Home, Zap, Palette, Settings } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+interface BottomNavProps {
+  activeTab: 'home' | 'boost' | 'theme' | 'settings';
+  onTabChange: (tab: 'home' | 'boost' | 'theme' | 'settings') => void;
+}
+
+const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
+  const tabs = [
+    { id: 'home' as const, label: 'Home', icon: Home },
+    { id: 'boost' as const, label: 'Boost', icon: Zap },
+    { id: 'theme' as const, label: 'Theme', icon: Palette },
+    { id: 'settings' as const, label: 'Settings', icon: Settings },
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-50 glass-heavy border-t border-border/50">
+      <div className="flex items-center justify-around px-4 py-3 max-w-lg mx-auto">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          const isBoost = tab.id === 'boost';
+          
+          return (
+            <motion.button
+              key={tab.id}
+              onClick={() => onTabChange(tab.id)}
+              className={`
+                flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all duration-300
+                ${isActive 
+                  ? isBoost 
+                    ? 'text-accent' 
+                    : 'text-primary'
+                  : 'text-muted-foreground hover:text-foreground'
+                }
+              `}
+              whileTap={{ scale: 0.95 }}
+            >
+              <div className="relative">
+                <Icon className={`w-6 h-6 ${isBoost && isActive ? 'animate-pulse' : ''}`} />
+                {isBoost && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-accent rounded-full animate-pulse" />
+                )}
+              </div>
+              <span className={`text-xs font-medium ${isActive ? 'opacity-100' : 'opacity-70'}`}>
+                {tab.label}
+              </span>
+              {isActive && (
+                <motion.div
+                  layoutId="activeTab"
+                  className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isBoost ? 'bg-accent' : 'bg-primary'}`}
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+};
+
+export default BottomNav;
