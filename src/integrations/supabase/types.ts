@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       matchmaking_queue: {
         Row: {
+          country: string | null
           created_at: string
           gender: string | null
           id: string
@@ -25,6 +26,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          country?: string | null
           created_at?: string
           gender?: string | null
           id?: string
@@ -34,6 +36,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          country?: string | null
           created_at?: string
           gender?: string | null
           id?: string

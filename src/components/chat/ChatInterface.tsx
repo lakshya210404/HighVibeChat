@@ -15,6 +15,7 @@ interface ChatInterfaceProps {
   gender?: string;
   lookingFor?: string;
   isPremium?: boolean;
+  selectedCountries?: string[];
 }
 
 const ChatInterface = ({ 
@@ -23,7 +24,8 @@ const ChatInterface = ({
   interests = [],
   gender = 'other',
   lookingFor = 'everyone',
-  isPremium = false 
+  isPremium = false,
+  selectedCountries = []
 }: ChatInterfaceProps) => {
   const {
     userId,
@@ -35,7 +37,7 @@ const ChatInterface = ({
     leaveRoom,
     sendMessage,
     findNext,
-  } = useMatchmaking(interests, gender, lookingFor, isPremium);
+  } = useMatchmaking(interests, gender, lookingFor, isPremium, selectedCountries);
 
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);

@@ -16,8 +16,8 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor } = await req.json();
-    console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}`);
+    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor, countries } = await req.json();
+    console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}, countries: ${countries?.length || 0}`);
 
     switch (action) {
       case 'join_queue': {
@@ -41,6 +41,7 @@ serve(async (req) => {
         const userGender = gender || 'other';
         const userLookingFor = lookingFor || 'everyone';
         const userIsPremium = isPremium || false;
+        const userCountries: string[] = countries || [];
 
         // Helper to check gender compatibility
         const isGenderMatch = (queueUser: any) => {
@@ -55,6 +56,28 @@ serve(async (req) => {
           return true;
         };
 
+        // Helper to check country compatibility (premium feature)
+        const isCountryMatch = (queueUser: any) => {
+          // If current user is premium and has country preferences
+          if (userIsPremium && userCountries.length > 0) {
+            // Queue user must have a country set and it must be in our list
+            if (!queueUser.country || !userCountries.includes(queueUser.country)) {
+              return false;
+            }
+          }
+          // If queue user is premium and has country preferences
+          if (queueUser.is_premium && queueUser.countries && queueUser.countries.length > 0) {
+            // We need to match their country preference (but we don't store user's actual country yet)
+            // For now, skip this check - they can match with anyone
+          }
+          return true;
+        };
+
+        // Combined compatibility check
+        const isCompatible = (queueUser: any) => {
+          return isGenderMatch(queueUser) && isCountryMatch(queueUser);
+        };
+
         // First try to find users with matching interests
         if (userInterests.length > 0) {
           const { data: matchingUsers } = await supabase
@@ -67,11 +90,11 @@ serve(async (req) => {
             .limit(10);
 
           if (matchingUsers && matchingUsers.length > 0) {
-            // Find first gender-compatible match
-            const matchedUser = matchingUsers.find(isGenderMatch);
+            // Find first compatible match (gender + country)
+            const matchedUser = matchingUsers.find(isCompatible);
             
             if (matchedUser) {
-              console.log('Found interest + gender match:', matchedUser.user_id);
+              console.log('Found interest + compatible match:', matchedUser.user_id);
 
               const { data: newRoom, error: roomError } = await supabase
                 .from('rooms')
@@ -98,20 +121,20 @@ serve(async (req) => {
           }
         }
 
-        // Fallback: match with any waiting user (premium first, with gender filtering)
+        // Fallback: match with any waiting user (premium first, with gender + country filtering)
         const { data: waitingUsers } = await supabase
           .from('matchmaking_queue')
           .select('*')
           .neq('user_id', userId)
           .order('is_premium', { ascending: false })
           .order('created_at', { ascending: true })
-          .limit(20);
+          .limit(30);
 
         if (waitingUsers && waitingUsers.length > 0) {
-          const matchedUser = waitingUsers.find(isGenderMatch);
+          const matchedUser = waitingUsers.find(isCompatible);
           
           if (matchedUser) {
-            console.log('Found gender-compatible match:', matchedUser.user_id);
+            console.log('Found compatible match:', matchedUser.user_id);
 
             const { data: newRoom, error: roomError } = await supabase
               .from('rooms')
@@ -138,6 +161,9 @@ serve(async (req) => {
         }
 
         // No match found, add to queue with all preferences
+        // For country, we'll store the first selected country as the user's "location"
+        const userCountry = userCountries.length > 0 ? userCountries[0] : null;
+        
         const { error: queueError } = await supabase
           .from('matchmaking_queue')
           .upsert({ 
@@ -145,12 +171,13 @@ serve(async (req) => {
             interests: userInterests,
             is_premium: userIsPremium,
             gender: userGender,
-            looking_for: userLookingFor
+            looking_for: userLookingFor,
+            country: userCountry
           }, { onConflict: 'user_id' });
 
         if (queueError) throw queueError;
 
-        console.log('User added to queue:', { interests: userInterests, gender: userGender, lookingFor: userLookingFor });
+        console.log('User added to queue:', { interests: userInterests, gender: userGender, lookingFor: userLookingFor, country: userCountry });
         return new Response(
           JSON.stringify({ success: true, waiting: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
