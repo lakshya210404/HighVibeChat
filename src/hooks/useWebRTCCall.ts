@@ -27,6 +27,7 @@ export const useWebRTCCall = ({
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
   const hasCreatedOfferRef = useRef(false);
   const isNegotiatingRef = useRef(false);
+  const signalingRef = useRef<ReturnType<typeof useWebRTCSignaling> | null>(null);
 
   const handleOffer = useCallback(async (offer: RTCSessionDescriptionInit) => {
     console.log('[WebRTC Call] Received offer');
@@ -54,7 +55,7 @@ export const useWebRTCCall = ({
       await pc.setLocalDescription(answer);
       
       console.log('[WebRTC Call] Sending answer');
-      signaling.sendAnswer(answer);
+      signalingRef.current?.sendAnswer(answer);
     } catch (error) {
       console.error('[WebRTC Call] Error handling offer:', error);
     }
@@ -108,6 +109,11 @@ export const useWebRTCCall = ({
     onIceCandidate: handleIceCandidate,
   });
 
+  // Keep signalingRef in sync
+  useEffect(() => {
+    signalingRef.current = signaling;
+  }, [signaling]);
+
   const createPeerConnection = useCallback(() => {
     console.log('[WebRTC Call] Creating peer connection');
     
@@ -125,7 +131,7 @@ export const useWebRTCCall = ({
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         console.log('[WebRTC Call] Sending ICE candidate');
-        signaling.sendIceCandidate(event.candidate.toJSON());
+        signalingRef.current?.sendIceCandidate(event.candidate.toJSON());
       }
     };
 
@@ -154,7 +160,7 @@ export const useWebRTCCall = ({
           console.log('[WebRTC Call] Negotiation needed - creating offer');
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-          signaling.sendOffer(offer);
+          signalingRef.current?.sendOffer(offer);
           hasCreatedOfferRef.current = true;
         }
       } catch (error) {
@@ -170,7 +176,7 @@ export const useWebRTCCall = ({
 
     peerConnectionRef.current = pc;
     return pc;
-  }, [isInitiator, signaling]);
+  }, [isInitiator]);
 
   const requestPermissions = useCallback(async () => {
     console.log('[WebRTC Call] Requesting camera/mic permissions');
@@ -208,13 +214,7 @@ export const useWebRTCCall = ({
   }, []);
 
   const startLocalStream = useCallback(async () => {
-    console.log('[WebRTC Call] Starting local stream');
-    
-    // If we already have a stream, return it
-    if (localStream) {
-      return localStream;
-    }
-    
+    if (localStream) return localStream;
     return requestPermissions();
   }, [localStream, requestPermissions]);
 
@@ -268,8 +268,8 @@ export const useWebRTCCall = ({
     hasCreatedOfferRef.current = false;
     isNegotiatingRef.current = false;
     
-    signaling.cleanup();
-  }, [localStream, signaling]);
+    signalingRef.current?.cleanup();
+  }, [localStream]);
 
   // Initialize WebRTC when room and peer are available AND permission is granted
   useEffect(() => {
@@ -286,20 +286,19 @@ export const useWebRTCCall = ({
         
         // If we're the initiator, wait a bit then create offer
         if (isInitiator) {
-          // Small delay to ensure both peers are ready
           setTimeout(async () => {
             if (pc.signalingState === 'stable' && !hasCreatedOfferRef.current) {
               console.log('[WebRTC Call] Creating initial offer');
               try {
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
-                signaling.sendOffer(offer);
+                signalingRef.current?.sendOffer(offer);
                 hasCreatedOfferRef.current = true;
               } catch (error) {
                 console.error('[WebRTC Call] Error creating offer:', error);
               }
             }
-          }, 1000);
+          }, 1500);
         }
       } catch (error) {
         console.error('[WebRTC Call] Error initializing call:', error);
@@ -309,7 +308,6 @@ export const useWebRTCCall = ({
     initCall();
 
     return () => {
-      // Only cleanup peer connection, not the stream
       if (peerConnectionRef.current) {
         peerConnectionRef.current.close();
         peerConnectionRef.current = null;
@@ -319,7 +317,7 @@ export const useWebRTCCall = ({
       pendingCandidatesRef.current = [];
       hasCreatedOfferRef.current = false;
       isNegotiatingRef.current = false;
-      signaling.cleanup();
+      signalingRef.current?.cleanup();
     };
   }, [roomId, peerId, isInitiator, permissionGranted, localStream]);
 
