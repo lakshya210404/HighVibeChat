@@ -59,8 +59,15 @@ export const useMatchmaking = (
           filter: `room_id=eq.${roomId}`
         },
         (payload) => {
-          console.log('New message:', payload.new);
-          setMessages(prev => [...prev, payload.new as Message]);
+          const newMsg = payload.new as Message;
+          console.log('New message received via Realtime:', newMsg.sender_id);
+          // Only add if not from us (we already added optimistically)
+          setMessages(prev => {
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            // If it's from us, skip (optimistic already added)
+            if (newMsg.sender_id === userId) return prev;
+            return [...prev, newMsg];
+          });
         }
       )
       .on(
@@ -80,10 +87,12 @@ export const useMatchmaking = (
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Realtime channel status:', status);
+      });
 
     channelRef.current = channel;
-  }, []);
+  }, [userId]);
 
   const joinQueue = useCallback(async () => {
     setStatus('searching');
@@ -170,15 +179,31 @@ export const useMatchmaking = (
   const sendMessage = useCallback(async (content: string) => {
     if (!room || !content.trim()) return;
 
+    // Optimistically add message locally
+    const optimisticMessage: Message = {
+      id: crypto.randomUUID(),
+      room_id: room.id,
+      sender_id: userId,
+      content: content.trim(),
+      created_at: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
-      const { data, error } = await supabase.functions.invoke('matchmaking', {
-        body: { action: 'send_message', userId, roomId: room.id, message: content }
-      });
+      // Insert directly via Supabase client instead of edge function
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          room_id: room.id,
+          sender_id: userId,
+          content: content.trim()
+        });
 
       if (error) throw error;
-      return data.message;
     } catch (error) {
       console.error('Send message error:', error);
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
     }
   }, [room, userId]);
 
