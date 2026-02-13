@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, MessageSquare, Camera } from "lucide-react";
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import VideoPanel from "./VideoPanel";
@@ -42,12 +42,9 @@ const ChatInterface = ({
   } = useMatchmaking(interests, gender, lookingFor, isPremium, selectedCountries, selectedVibe);
 
   const [inputValue, setInputValue] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [showChat, setShowChat] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isVideoMode = mode === 'video-text';
-  const isTextMode = true; // Text is always available
 
   // Determine peer ID and if we're the initiator
   const peerId = room ? (room.user1_id === userId ? room.user2_id : room.user1_id) : null;
@@ -137,12 +134,12 @@ const ChatInterface = ({
   return (
     <div className="fixed inset-0 z-50 bg-background flex flex-col">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border/50 glass-heavy z-10">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Leaf className="w-4 h-4 text-primary" />
+      <header className="flex items-center justify-between px-3 py-2 border-b border-border/50 glass-heavy z-10">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center">
+            <Leaf className="w-3.5 h-3.5 text-primary" />
           </div>
-          <span className="font-display font-semibold">HighVibeChat</span>
+          <span className="font-display font-semibold text-sm">HighVibeChat</span>
           <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
             {getModeLabel()}
           </span>
@@ -150,17 +147,14 @@ const ChatInterface = ({
 
         <div className="flex items-center gap-2">
           {status === "connected" && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary text-sm">
-              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
               Connected
-              {isVideoMode && connectionState === 'connected' && (
-                <span className="text-xs opacity-70">(Video)</span>
-              )}
             </div>
           )}
           {status === "searching" && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 text-accent text-sm">
-              <span className="w-2 h-2 bg-accent rounded-full animate-pulse" />
+            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs">
+              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
               Searching...
             </div>
           )}
@@ -170,202 +164,189 @@ const ChatInterface = ({
           variant="ghost"
           size="icon"
           onClick={handleLeave}
-          className="text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground h-8 w-8"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </Button>
       </header>
 
       {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Video section - only show if video mode */}
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+        {/* Video section */}
         {isVideoMode && (
-          <div className="flex-1 flex flex-col lg:flex-row gap-2 p-2 relative">
+          <div className="flex-[2] flex flex-col min-h-0 relative">
             {!permissionGranted ? (
-              <div className="flex-1 flex items-center justify-center bg-muted/20 rounded-2xl">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
-                    <Camera className="w-10 h-10 text-primary" />
+              <div className="flex-1 flex items-center justify-center bg-muted/20 m-2 rounded-2xl">
+                <div className="text-center space-y-3 p-4">
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
+                    <Camera className="w-8 h-8 text-primary" />
                   </div>
-                  <h3 className="text-xl font-display font-semibold">Enable Camera & Microphone</h3>
-                  <p className="text-muted-foreground max-w-sm">
-                    To start video chatting, we need access to your camera and microphone.
+                  <h3 className="text-lg font-display font-semibold">Enable Camera & Mic</h3>
+                  <p className="text-muted-foreground text-sm max-w-xs">
+                    Allow access to start video chatting.
                   </p>
-                  <Button onClick={handleRequestPermissions} className="gap-2">
+                  <Button onClick={handleRequestPermissions} className="gap-2" size="sm">
                     <Video className="w-4 h-4" />
                     Allow Access
                   </Button>
                 </div>
               </div>
             ) : (
-              <>
-                <VideoPanel 
-                  isLocal={false} 
-                  isConnected={status === "connected"} 
-                  isSearching={status === "searching"}
-                  stream={remoteStream}
-                  videoRef={remoteVideoRef}
-                  connectionState={connectionState}
-                />
-                <VideoPanel 
-                  isLocal={true} 
-                  isConnected={status === "connected"}
-                  isVideoEnabled={isVideoEnabled}
-                  isAudioEnabled={isAudioEnabled}
-                  stream={localStream}
-                  videoRef={localVideoRef}
-                />
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Chat sidebar/main area */}
-        {isTextMode && showChat && (
-          <div className={`
-            ${isVideoMode ? 'w-full lg:w-96 border-l border-border/50' : 'flex-1'} 
-            flex flex-col bg-card/50
-          `}>
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {status === "searching" && (
-                <div className="flex flex-col items-center justify-center h-full gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
-                    <Leaf className="absolute inset-0 m-auto w-6 h-6 text-primary" />
-                  </div>
-                  <p className="text-muted-foreground text-sm">Finding your vibe match...</p>
-                </div>
-              )}
-
-              {status === "disconnected" && (
-                <div className="flex flex-col items-center justify-center h-full gap-4">
-                  <p className="text-lg font-display text-muted-foreground">Stranger disconnected</p>
-                  <Button onClick={handleNext} className="gap-2">
-                    <SkipForward className="w-4 h-4" />
-                    Find New Vibe
-                  </Button>
-                </div>
-              )}
-
-              {status === "connected" && (
-                <>
-                  <div className="text-center py-2">
-                    <span className="text-xs text-muted-foreground bg-muted/50 px-3 py-1 rounded-full">
-                      Connected with a stranger ✌️
-                    </span>
-                  </div>
-                  
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender_id === userId ? "justify-end" : "justify-start"}`}
-                    >
-                      <div
-                        className={`
-                          max-w-[85%] px-4 py-2.5 rounded-2xl
-                          ${message.sender_id === userId 
-                            ? "bg-primary text-primary-foreground rounded-br-sm" 
-                            : "bg-muted text-foreground rounded-bl-sm"
-                          }
-                        `}
-                      >
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
-
-                  {isTyping && (
-                    <div className="flex justify-start">
-                      <div className="bg-muted px-4 py-3 rounded-2xl rounded-bl-sm">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </>
-              )}
-            </div>
-
-            {/* Input area */}
-            {status === "connected" && (
-              <div className="p-3 border-t border-border/50">
-                <div className="flex gap-2">
-                  <Input
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="bg-muted/50 border-border/50 focus:border-primary rounded-xl"
+              <div className="flex-1 flex flex-col gap-1 p-1 min-h-0">
+                {/* Remote video - takes most space */}
+                <div className="flex-1 min-h-0 relative">
+                  <VideoPanel 
+                    isLocal={false} 
+                    isConnected={status === "connected"} 
+                    isSearching={status === "searching"}
+                    stream={remoteStream}
+                    videoRef={remoteVideoRef}
+                    connectionState={connectionState}
                   />
-                  <Button
-                    size="icon"
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim()}
-                    className="rounded-xl bg-primary hover:bg-primary/90"
-                  >
-                    <Send className="w-4 h-4" />
-                  </Button>
+                </div>
+                {/* Local video - small overlay */}
+                <div className="absolute bottom-2 right-2 w-24 h-32 sm:w-32 sm:h-40 z-20 rounded-xl overflow-hidden border-2 border-border/50 shadow-lg">
+                  <VideoPanel 
+                    isLocal={true} 
+                    isConnected={status === "connected"}
+                    isVideoEnabled={isVideoEnabled}
+                    isAudioEnabled={isAudioEnabled}
+                    stream={localStream}
+                    videoRef={localVideoRef}
+                  />
                 </div>
               </div>
             )}
           </div>
         )}
+
+        {/* Chat section - always visible, compact in video mode */}
+        <div className={`
+          ${isVideoMode ? 'flex-1 min-h-[180px] max-h-[40%] lg:max-h-full lg:w-80 lg:min-w-[320px]' : 'flex-1'} 
+          flex flex-col border-t lg:border-t-0 lg:border-l border-border/50 bg-card/50 min-h-0
+        `}>
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+            {status === "searching" && !isVideoMode && (
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+                  <Leaf className="absolute inset-0 m-auto w-5 h-5 text-primary" />
+                </div>
+                <p className="text-muted-foreground text-sm">Finding your vibe match...</p>
+              </div>
+            )}
+
+            {status === "disconnected" && (
+              <div className="flex flex-col items-center justify-center h-full gap-3">
+                <p className="text-base font-display text-muted-foreground">Stranger disconnected</p>
+                <Button onClick={handleNext} className="gap-2" size="sm">
+                  <SkipForward className="w-4 h-4" />
+                  Find New Vibe
+                </Button>
+              </div>
+            )}
+
+            {status === "connected" && (
+              <>
+                <div className="text-center py-1">
+                  <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                    Connected with a stranger ✌️
+                  </span>
+                </div>
+                
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender_id === userId ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`
+                        max-w-[85%] px-3 py-2 rounded-2xl
+                        ${message.sender_id === userId 
+                          ? "bg-primary text-primary-foreground rounded-br-sm" 
+                          : "bg-muted text-foreground rounded-bl-sm"
+                        }
+                      `}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </>
+            )}
+
+            {status === "searching" && isVideoMode && (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-muted-foreground text-xs">Searching for someone...</p>
+              </div>
+            )}
+          </div>
+
+          {/* Input area */}
+          {status === "connected" && (
+            <div className="p-2 border-t border-border/50">
+              <div className="flex gap-2">
+                <Input
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type a message..."
+                  className="bg-muted/50 border-border/50 focus:border-primary rounded-xl text-sm h-9"
+                />
+                <Button
+                  size="icon"
+                  onClick={handleSendMessage}
+                  disabled={!inputValue.trim()}
+                  className="rounded-xl bg-primary hover:bg-primary/90 h-9 w-9"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Bottom controls */}
-      <div className="flex items-center justify-center gap-4 p-4 border-t border-border/50 glass-heavy">
+      <div className="flex items-center justify-center gap-3 p-2 border-t border-border/50 glass-heavy">
         {isVideoMode && permissionGranted && (
           <>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleAudio}
-              className={`w-12 h-12 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+              className={`w-10 h-10 rounded-full ${!isAudioEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
             >
-              {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+              {isAudioEnabled ? <Mic className="w-4 h-4" /> : <MicOff className="w-4 h-4" />}
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleVideo}
-              className={`w-12 h-12 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
+              className={`w-10 h-10 rounded-full ${!isVideoEnabled ? 'bg-destructive/20 text-destructive' : 'bg-muted/50 text-foreground'}`}
             >
-              {isVideoEnabled ? <Video className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+              {isVideoEnabled ? <Video className="w-4 h-4" /> : <VideoOff className="w-4 h-4" />}
             </Button>
           </>
         )}
 
         <Button
           onClick={handleNext}
-          className="px-8 py-6 rounded-full bg-primary hover:bg-primary/90 font-display font-semibold"
+          className="px-6 py-5 rounded-full bg-primary hover:bg-primary/90 font-display font-semibold text-sm"
         >
-          <SkipForward className="w-5 h-5 mr-2" />
+          <SkipForward className="w-4 h-4 mr-2" />
           Next
         </Button>
-
-        {isVideoMode && isTextMode && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowChat(!showChat)}
-            className={`w-12 h-12 rounded-full ${showChat ? 'bg-primary/20 text-primary' : 'bg-muted/50'}`}
-          >
-            <MessageSquare className="w-5 h-5" />
-          </Button>
-        )}
 
         <Button
           variant="ghost"
           size="icon"
-          className="w-12 h-12 rounded-full bg-muted/50 text-muted-foreground hover:text-destructive hover:bg-destructive/20"
+          className="w-10 h-10 rounded-full bg-muted/50 text-muted-foreground hover:text-destructive hover:bg-destructive/20"
         >
-          <Flag className="w-5 h-5" />
+          <Flag className="w-4 h-4" />
         </Button>
       </div>
     </div>
