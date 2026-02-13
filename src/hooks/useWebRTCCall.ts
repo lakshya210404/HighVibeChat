@@ -21,6 +21,9 @@ export const useWebRTCCall = ({
   const [connectionState, setConnectionState] = useState<RTCPeerConnectionState>('new');
   const [permissionGranted, setPermissionGranted] = useState(false);
   
+  // Only activate signaling after peer connection is ready
+  const [signalingRoomId, setSignalingRoomId] = useState<string | null>(null);
+  
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -97,9 +100,10 @@ export const useWebRTCCall = ({
     }
   }, []);
 
+  // Only subscribe to signaling when peer connection is ready (signalingRoomId is set)
   const signaling = useWebRTCSignaling({
     userId,
-    roomId,
+    roomId: signalingRoomId,
     peerId,
     onOffer: handleOffer,
     onAnswer: handleAnswer,
@@ -279,6 +283,7 @@ export const useWebRTCCall = ({
       peerConnectionRef.current = null;
     }
     
+    setSignalingRoomId(null);
     setRemoteStream(null);
     setConnectionState('new');
     setPermissionGranted(false);
@@ -292,55 +297,62 @@ export const useWebRTCCall = ({
   // Initialize WebRTC when room and peer are available AND permission is granted
   useEffect(() => {
     if (!roomId || !peerId || !permissionGranted || !localStream) {
+      setSignalingRoomId(null);
       return;
     }
 
     console.log('[WebRTC Call] Initializing call - isInitiator:', isInitiator, 'roomId:', roomId);
     
-    const initCall = async () => {
-      try {
-        const pc = createPeerConnection();
-        addLocalStreamToConnection(localStream);
-        
-        if (isInitiator) {
-          // Delay to ensure both peers are subscribed to signals
-          setTimeout(async () => {
-            if (pc.signalingState === 'stable' && !hasCreatedOfferRef.current) {
-              console.log('[WebRTC Call] Creating initial offer');
-              try {
-                const offer = await pc.createOffer({
-                  offerToReceiveAudio: true,
-                  offerToReceiveVideo: true,
-                });
-                await pc.setLocalDescription(offer);
-                signalingRef.current?.sendOffer(offer);
-                hasCreatedOfferRef.current = true;
-              } catch (error) {
-                console.error('[WebRTC Call] Error creating offer:', error);
-              }
-            }
-          }, 2000);
+    // Step 1: Create peer connection and add tracks FIRST
+    const pc = createPeerConnection();
+    addLocalStreamToConnection(localStream);
+    
+    // Step 2: NOW activate signaling so it can receive/fetch signals with PC ready
+    setSignalingRoomId(roomId);
+    
+    // Step 3: If initiator, create offer after a delay to let responder subscribe
+    if (isInitiator) {
+      const timer = setTimeout(async () => {
+        if (pc.signalingState === 'stable' && !hasCreatedOfferRef.current) {
+          console.log('[WebRTC Call] Creating initial offer');
+          try {
+            const offer = await pc.createOffer({
+              offerToReceiveAudio: true,
+              offerToReceiveVideo: true,
+            });
+            await pc.setLocalDescription(offer);
+            signalingRef.current?.sendOffer(offer);
+            hasCreatedOfferRef.current = true;
+          } catch (error) {
+            console.error('[WebRTC Call] Error creating offer:', error);
+          }
         }
-      } catch (error) {
-        console.error('[WebRTC Call] Error initializing call:', error);
-      }
-    };
-
-    initCall();
+      }, 2000);
+      
+      return () => {
+        clearTimeout(timer);
+        cleanupConnection();
+      };
+    }
 
     return () => {
-      if (peerConnectionRef.current) {
-        peerConnectionRef.current.close();
-        peerConnectionRef.current = null;
-      }
-      setRemoteStream(null);
-      setConnectionState('new');
-      pendingCandidatesRef.current = [];
-      hasCreatedOfferRef.current = false;
-      isNegotiatingRef.current = false;
-      signalingRef.current?.cleanup();
+      cleanupConnection();
     };
   }, [roomId, peerId, isInitiator, permissionGranted, localStream]);
+
+  const cleanupConnection = useCallback(() => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    setSignalingRoomId(null);
+    setRemoteStream(null);
+    setConnectionState('new');
+    pendingCandidatesRef.current = [];
+    hasCreatedOfferRef.current = false;
+    isNegotiatingRef.current = false;
+    signalingRef.current?.cleanup();
+  }, []);
 
   return {
     localStream,
