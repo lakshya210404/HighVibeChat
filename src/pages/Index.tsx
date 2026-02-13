@@ -7,7 +7,7 @@ import Features from "@/components/landing/Features";
 import Premium from "@/components/landing/Premium";
 import Footer from "@/components/landing/Footer";
 import Reviews from "@/components/landing/Reviews";
-import CommunitySection from "@/components/landing/CommunitySection";
+
 import ChatInterface from "@/components/chat/ChatInterface";
 import ModeSelector, { ChatMode } from "@/components/chat/ModeSelector";
 import AgeVerification from "@/components/AgeVerification";
@@ -94,7 +94,7 @@ const Index = () => {
           selectedVibe={selectedVibe}
           onVibeChange={setSelectedVibe}
         />
-        <CommunitySection />
+        
         <Reviews />
         <Features />
         <Premium />
