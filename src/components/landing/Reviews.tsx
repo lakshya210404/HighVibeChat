@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Star, Quote, Cannabis, Sparkles, Heart, Flame, Zap } from 'lucide-react';
+import { Star, Quote, Sparkles, Heart, Flame, Zap } from 'lucide-react';
 
 const reviews = [
   {
@@ -9,7 +9,7 @@ const reviews = [
     text: "This app understands the assignment. Late night sessions with people from around the world who actually get it. The cosmic theme hits different when you're in the right headspace 🌌",
     emoji: '🧔',
     vibe: 'Cosmic Explorer',
-    badge: <Cannabis className="w-3 h-3" />
+    badge: <Zap className="w-3 h-3" />
   },
   {
     id: 2,
@@ -54,12 +54,12 @@ const reviews = [
     text: "The Elevate feature is a game changer. No more waiting around, just instant quality matches. Been here since launch and it keeps getting better 🚀",
     emoji: '🧑',
     vibe: 'OG Member',
-    badge: <Cannabis className="w-3 h-3" />
+    badge: <Sparkles className="w-3 h-3" />
   }
 ];
 
 const stats = [
-  { value: '50K+', label: 'Elevated Souls', icon: <Cannabis className="w-5 h-5" /> },
+  { value: '50K+', label: 'Elevated Souls', icon: <Sparkles className="w-5 h-5" /> },
   { value: '1M+', label: 'Good Vibes Shared', icon: <Heart className="w-5 h-5" /> },
   { value: '4.9', label: 'Vibe Rating', icon: <Star className="w-5 h-5" /> },
   { value: '24/7', label: 'Active Sessions', icon: <Flame className="w-5 h-5" /> }
@@ -82,7 +82,7 @@ const Reviews = () => {
           className="text-center mb-12"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-4">
-            <Cannabis className="w-4 h-4 text-primary" />
+            <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">Real Talk from Real People</span>
           </div>
           <h2 className="font-display text-4xl md:text-5xl font-bold mb-4">
