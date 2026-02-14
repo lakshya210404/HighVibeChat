@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="HighVibeChat" className="w-10 h-10 rounded-xl" />
+            <img src="/logo.svg" alt="HighVibeChat" className="w-10 h-10" />
             <span className="font-display text-xl font-bold">HighVibeChat</span>
           </Link>
 

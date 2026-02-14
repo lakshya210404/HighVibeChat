@@ -52,7 +52,7 @@ const Auth = () => {
           </button>
 
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="HighVibeChat" className="w-16 h-16 mx-auto mb-4 rounded-xl" />
+            <img src="/logo.svg" alt="HighVibeChat" className="w-20 h-auto mx-auto mb-4" />
             <h1 className="font-display text-3xl font-bold">
               <span className="text-gradient">HighVibe</span>Chat
             </h1>
