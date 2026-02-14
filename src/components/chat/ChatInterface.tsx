@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
 import { toast } from "sonner";
@@ -43,6 +44,11 @@ const ChatInterface = ({
 
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const { isPartnerTyping, sendTyping } = useTypingIndicator({
+    roomId: status === 'connected' ? room?.id || null : null,
+    userId,
+  });
 
   const isVideoMode = mode === 'video-text';
 
@@ -86,7 +92,7 @@ const ChatInterface = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isPartnerTyping]);
 
   // Start searching when component mounts
   useEffect(() => {
@@ -273,6 +279,17 @@ const ChatInterface = ({
                     </div>
                   </div>
                 ))}
+                {isPartnerTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted text-muted-foreground px-3 py-2 rounded-2xl rounded-bl-sm">
+                      <div className="flex gap-1 items-center h-4">
+                        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:0ms]" />
+                        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:150ms]" />
+                        <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-bounce [animation-delay:300ms]" />
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div ref={messagesEndRef} />
               </>
             )}
@@ -290,7 +307,7 @@ const ChatInterface = ({
               <div className="flex gap-2">
                 <Input
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => { setInputValue(e.target.value); sendTyping(); }}
                   onKeyPress={handleKeyPress}
                   placeholder="Type a message..."
                   className="bg-muted/50 border-border/50 focus:border-primary rounded-xl text-sm h-9"
