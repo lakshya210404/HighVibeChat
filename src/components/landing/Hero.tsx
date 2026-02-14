@@ -39,7 +39,7 @@ const Hero = ({
       {/* Main content */}
       <div className="relative z-10 text-center max-w-lg mx-auto w-full">
         {/* Logo & Tagline */}
-        <img src="/logo.png" alt="HighVibeChat" className="w-20 h-20 mx-auto mb-4 slide-up" />
+        <img src="/logo.svg" alt="HighVibeChat" className="w-24 h-auto mx-auto mb-4 slide-up" />
         <h1 
           className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-2 slide-up"
         >
