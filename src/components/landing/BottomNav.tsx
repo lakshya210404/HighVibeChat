@@ -1,4 +1,4 @@
-import { Home, Palette, Settings, Flame, Leaf } from 'lucide-react';
+import { Home, Palette, Settings, Flame } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface BottomNavProps {
@@ -8,7 +8,7 @@ interface BottomNavProps {
 
 const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
   const tabs = [
-    { id: 'home' as const, label: 'Home', icon: Leaf },
+    { id: 'home' as const, label: 'Home', icon: Home },
     { id: 'elevate' as const, label: 'Elevate', icon: Flame },
     { id: 'theme' as const, label: 'Vibes', icon: Palette },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
