@@ -1,4 +1,4 @@
-import { Video, MessageSquare, Sparkles, Cannabis } from "lucide-react";
+import { Video, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -24,7 +24,7 @@ const ModeSelector = ({ onSelectMode, onBack }: ModeSelectorProps) => {
           className="mb-12"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6">
-            <Cannabis className="w-4 h-4 text-primary" />
+            <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm text-muted-foreground">Pick your sesh style</span>
           </div>
           <h2 className="font-display text-4xl sm:text-5xl font-bold mb-4">

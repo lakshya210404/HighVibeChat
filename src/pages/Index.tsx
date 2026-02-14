@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import SmokeBackground from "@/components/ui/SmokeBackground";
-import CannabisParticles from "@/components/landing/CannabisParticles";
+import VibeParticles from "@/components/landing/VibeParticles";
 import FourTwentySurprise from "@/components/landing/FourTwentySurprise";
 import Hero from "@/components/landing/Hero";
 import Features from "@/components/landing/Features";
@@ -106,7 +106,7 @@ const Index = () => {
   return (
     <>
       <SmokeBackground />
-      <CannabisParticles />
+      <VibeParticles />
       <FourTwentySurprise />
       {appState === 'age-verify' && (
         <AgeVerification onVerified={handleAgeVerified} />

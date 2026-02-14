@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Cannabis, Flame, Sparkles, Crown, Users, Star, Rocket, TrendingUp } from 'lucide-react';
+import { Zap, Flame, Sparkles, Crown, Users, Star, Rocket, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ const elevateOptions: ElevateOption[] = [
     id: 'light_up',
     name: 'Light Up',
     tagline: 'Quick hit of priority',
-    icon: <Cannabis className="w-6 h-6" />,
+    icon: <Zap className="w-6 h-6" />,
     gradient: 'from-emerald-500/20 to-green-600/10',
     features: ['Priority queue', 'Skip the wait'],
   },
@@ -115,7 +115,7 @@ const BoostPanel = () => {
           <div className="relative inline-block mb-4">
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary via-accent to-secondary p-[2px]">
               <div className="w-full h-full rounded-full bg-background flex items-center justify-center">
-                <Cannabis className="w-10 h-10 text-primary" />
+                <Sparkles className="w-10 h-10 text-primary" />
               </div>
             </div>
             <motion.div
