@@ -37,17 +37,17 @@ const Hero = ({
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/10 rounded-full blur-[150px] animate-breathe" />
 
       {/* Main content */}
-      <div className="relative z-10 text-center max-w-lg mx-auto w-full">
+      <div className="relative z-10 text-center max-w-xl mx-auto w-full">
         {/* Logo & Tagline */}
-        <img src="/logo.svg" alt="HighVibeChat" className="w-24 h-auto mx-auto mb-4 slide-up" />
+        <img src="/logo.svg" alt="HighVibeChat" className="w-32 h-auto mx-auto mb-5 slide-up" />
         <h1 
-          className="font-display text-4xl sm:text-5xl md:text-6xl font-bold mb-2 slide-up"
+          className="font-display text-5xl sm:text-6xl md:text-7xl font-bold mb-3 slide-up"
         >
           <span className="text-gradient glow-text">HighVibe</span>
           <span className="text-foreground">Chat</span>
         </h1>
         <p 
-          className="text-muted-foreground italic mb-8 slide-up"
+          className="text-muted-foreground/90 italic text-lg mb-10 slide-up"
           style={{ animationDelay: "0.1s" }}
         >
           Vibe With Elevated Minds™

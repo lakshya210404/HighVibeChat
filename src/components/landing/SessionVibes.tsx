@@ -62,11 +62,11 @@ const SessionVibes = ({ selectedVibe, onVibeChange }: SessionVibesProps) => {
   };
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Flame className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-muted-foreground">Session Vibe</span>
+          <Flame className="w-5 h-5 text-accent" />
+          <span className="text-base font-semibold text-foreground/80">Session Vibe</span>
         </div>
         {selectedVibe && (
           <button 
@@ -78,7 +78,7 @@ const SessionVibes = ({ selectedVibe, onVibeChange }: SessionVibesProps) => {
         )}
       </div>
       
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-4 gap-3">
         {VIBES.map((vibe) => {
           const isSelected = selectedVibe === vibe.id;
           const Icon = vibe.icon;
@@ -88,18 +88,18 @@ const SessionVibes = ({ selectedVibe, onVibeChange }: SessionVibesProps) => {
               key={vibe.id}
               onClick={() => handleVibeClick(vibe.id)}
               className={`
-                relative flex flex-col items-center gap-1 p-3 rounded-xl
+                relative flex flex-col items-center gap-1.5 p-4 rounded-xl
                 border transition-all duration-300
                 ${isSelected 
                   ? `bg-gradient-to-br ${vibe.gradient} ${vibe.borderColor} ${vibe.textColor}` 
-                  : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/30"
+                  : "bg-card/70 border-border text-foreground/70 hover:border-primary/30"
                 }
               `}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <span className="text-xl">{vibe.emoji}</span>
-              <span className="text-xs font-medium">{vibe.label}</span>
+              <span className="text-2xl">{vibe.emoji}</span>
+              <span className="text-sm font-semibold">{vibe.label}</span>
               
               {isSelected && (
                 <motion.div
