@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor, countries, vibe } = await req.json();
+    const { action, userId, roomId, message, interests, isPremium, gender, lookingFor, countries, vibe, authUserId } = await req.json();
     console.log(`Matchmaking action: ${action}, userId: ${userId}, gender: ${gender}, lookingFor: ${lookingFor}, countries: ${countries?.length || 0}, vibe: ${vibe}`);
 
     switch (action) {
@@ -124,6 +124,8 @@ serve(async (req) => {
                 .insert({
                   user1_id: matchedUser.user_id,
                   user2_id: userId,
+                  user1_auth_id: matchedUser.auth_user_id || null,
+                  user2_auth_id: authUserId || null,
                   status: 'active'
                 })
                 .select()
@@ -169,6 +171,8 @@ serve(async (req) => {
               .insert({
                 user1_id: matchedUser.user_id,
                 user2_id: userId,
+                user1_auth_id: matchedUser.auth_user_id || null,
+                user2_auth_id: authUserId || null,
                 status: 'active'
               })
               .select()
@@ -201,7 +205,8 @@ serve(async (req) => {
             gender: userGender,
             looking_for: userLookingFor,
             country: userCountry,
-            vibe: userVibe
+            vibe: userVibe,
+            auth_user_id: authUserId || null
           }, { onConflict: 'user_id' });
 
         if (queueError) throw queueError;

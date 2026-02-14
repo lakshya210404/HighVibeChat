@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Room {
   id: string;
   status: string;
   user1_id: string;
   user2_id: string | null;
+  user1_auth_id: string | null;
+  user2_auth_id: string | null;
 }
 
 interface Message {
@@ -24,6 +27,7 @@ export const useMatchmaking = (
   countries: string[] = [],
   vibe: string | null = null
 ) => {
+  const { user } = useAuth();
   const [userId] = useState(() => crypto.randomUUID());
   const [status, setStatus] = useState<'idle' | 'searching' | 'connected' | 'disconnected'>('idle');
   const [room, setRoom] = useState<Room | null>(null);
@@ -100,7 +104,7 @@ export const useMatchmaking = (
 
     try {
       const { data, error } = await supabase.functions.invoke('matchmaking', {
-        body: { action: 'join_queue', userId, interests, gender, lookingFor, isPremium, countries, vibe }
+        body: { action: 'join_queue', userId, interests, gender, lookingFor, isPremium, countries, vibe, authUserId: user?.id }
       });
 
       if (error) throw error;
