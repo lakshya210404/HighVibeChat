@@ -178,27 +178,10 @@ export const useWebRTCCall = ({
       }
     };
 
-    pc.onnegotiationneeded = async () => {
-      if (isNegotiatingRef.current) return;
-      
-      try {
-        isNegotiatingRef.current = true;
-        
-        if (isInitiator && !hasCreatedOfferRef.current) {
-          console.log('[WebRTC Call] Negotiation needed - creating offer');
-          const offer = await pc.createOffer({
-            offerToReceiveAudio: true,
-            offerToReceiveVideo: true,
-          });
-          await pc.setLocalDescription(offer);
-          signalingRef.current?.sendOffer(offer);
-          hasCreatedOfferRef.current = true;
-        }
-      } catch (error) {
-        console.error('[WebRTC Call] Negotiation error:', error);
-      } finally {
-        isNegotiatingRef.current = false;
-      }
+    pc.onnegotiationneeded = () => {
+      // Don't create offers here - the initial offer is created in the 2s timer
+      // after signaling is ready. This event fires too early (before signalingRef is updated).
+      console.log('[WebRTC Call] Negotiation needed event (handled by timer)');
     };
 
     peerConnectionRef.current = pc;
