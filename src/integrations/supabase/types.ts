@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          room_id: string | null
+          sender_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          room_id?: string | null
+          sender_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          room_id?: string | null
+          sender_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_requests_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friendships: {
+        Row: {
+          created_at: string
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
       matchmaking_queue: {
         Row: {
           country: string | null
@@ -82,6 +138,27 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           created_at: string
@@ -106,6 +183,24 @@ export type Database = {
           status?: Database["public"]["Enums"]["room_status"]
           user1_id?: string
           user2_id?: string | null
+        }
+        Relationships: []
+      }
+      user_presence: {
+        Row: {
+          is_online: boolean
+          last_seen: string
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean
+          last_seen?: string
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean
+          last_seen?: string
+          user_id?: string
         }
         Relationships: []
       }

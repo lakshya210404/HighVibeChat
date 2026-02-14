@@ -17,10 +17,13 @@ import BottomNav from "@/components/landing/BottomNav";
 import ThemeSelector from "@/components/landing/ThemeSelector";
 import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
+import FriendsPanel from "@/components/friends/FriendsPanel";
 import { SessionVibe } from "@/components/landing/SessionVibes";
+import { usePresence } from "@/hooks/usePresence";
+import { useFriends } from "@/hooks/useFriends";
 
 type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
-type NavTab = 'home' | 'elevate' | 'theme' | 'settings';
+type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -34,6 +37,10 @@ const Index = () => {
   const [isPremium, setIsPremium] = useState(false);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
+
+  // Track online presence
+  usePresence();
+  const { incomingRequests } = useFriends();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -84,8 +91,10 @@ const Index = () => {
     setActiveTab(tab);
   };
 
-  // Render content based on active tab
   const renderContent = () => {
+    if (activeTab === 'friends') {
+      return <FriendsPanel />;
+    }
     if (activeTab === 'theme') {
       return <ThemeSelector />;
     }
@@ -105,7 +114,6 @@ const Index = () => {
         />
       );
     }
-    // Home tab - show the regular content
     return (
       <>
         <Hero 
@@ -117,7 +125,6 @@ const Index = () => {
           selectedVibe={selectedVibe}
           onVibeChange={setSelectedVibe}
         />
-        
         <Reviews />
         <Features />
         <Premium onGoElevate={() => setActiveTab('elevate')} />
@@ -157,7 +164,11 @@ const Index = () => {
           <main className="relative z-10 pb-24">
             {renderContent()}
           </main>
-          <BottomNav activeTab={activeTab} onTabChange={handleTabChange} />
+          <BottomNav 
+            activeTab={activeTab} 
+            onTabChange={handleTabChange} 
+            friendRequestCount={incomingRequests.length}
+          />
         </>
       )}
     </>
