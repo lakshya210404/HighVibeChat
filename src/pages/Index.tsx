@@ -97,7 +97,7 @@ const Index = () => {
         
         <Reviews />
         <Features />
-        <Premium />
+        <Premium onGoElevate={() => setActiveTab('elevate')} />
         <Footer />
       </>
     );
