@@ -1,14 +1,16 @@
-import { Home, Palette, Settings, Flame } from 'lucide-react';
+import { Home, Palette, Settings, Flame, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface BottomNavProps {
-  activeTab: 'home' | 'elevate' | 'theme' | 'settings';
-  onTabChange: (tab: 'home' | 'elevate' | 'theme' | 'settings') => void;
+  activeTab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends';
+  onTabChange: (tab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends') => void;
+  friendRequestCount?: number;
 }
 
-const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
+const BottomNav = ({ activeTab, onTabChange, friendRequestCount = 0 }: BottomNavProps) => {
   const tabs = [
     { id: 'home' as const, label: 'Home', icon: Home },
+    { id: 'friends' as const, label: 'Friends', icon: Users },
     { id: 'elevate' as const, label: 'Elevate', icon: Flame },
     { id: 'theme' as const, label: 'Vibes', icon: Palette },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
@@ -45,6 +47,11 @@ const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                     animate={{ scale: [1, 1.3, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   />
+                )}
+                {tab.id === 'friends' && friendRequestCount > 0 && (
+                  <span className="absolute -top-1 -right-2 w-4 h-4 flex items-center justify-center text-[9px] rounded-full bg-accent text-accent-foreground font-bold">
+                    {friendRequestCount}
+                  </span>
                 )}
               </div>
               <span className={`text-xs font-medium ${isActive ? 'opacity-100' : 'opacity-70'}`}>
