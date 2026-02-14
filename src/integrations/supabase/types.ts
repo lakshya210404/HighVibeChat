@@ -72,6 +72,7 @@ export type Database = {
       }
       matchmaking_queue: {
         Row: {
+          auth_user_id: string | null
           country: string | null
           created_at: string
           gender: string | null
@@ -83,6 +84,7 @@ export type Database = {
           vibe: string | null
         }
         Insert: {
+          auth_user_id?: string | null
           country?: string | null
           created_at?: string
           gender?: string | null
@@ -94,6 +96,7 @@ export type Database = {
           vibe?: string | null
         }
         Update: {
+          auth_user_id?: string | null
           country?: string | null
           created_at?: string
           gender?: string | null
@@ -165,7 +168,9 @@ export type Database = {
           ended_at: string | null
           id: string
           status: Database["public"]["Enums"]["room_status"]
+          user1_auth_id: string | null
           user1_id: string
+          user2_auth_id: string | null
           user2_id: string | null
         }
         Insert: {
@@ -173,7 +178,9 @@ export type Database = {
           ended_at?: string | null
           id?: string
           status?: Database["public"]["Enums"]["room_status"]
+          user1_auth_id?: string | null
           user1_id: string
+          user2_auth_id?: string | null
           user2_id?: string | null
         }
         Update: {
@@ -181,7 +188,9 @@ export type Database = {
           ended_at?: string | null
           id?: string
           status?: Database["public"]["Enums"]["room_status"]
+          user1_auth_id?: string | null
           user1_id?: string
+          user2_auth_id?: string | null
           user2_id?: string | null
         }
         Relationships: []

@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera } from "lucide-react";
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useFriends } from "@/hooks/useFriends";
+import { useAuth } from "@/contexts/AuthContext";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
 import { toast } from "sonner";
@@ -43,7 +45,10 @@ const ChatInterface = ({
   } = useMatchmaking(interests, gender, lookingFor, isPremium, selectedCountries, selectedVibe);
 
   const [inputValue, setInputValue] = useState("");
+  const [friendRequestSent, setFriendRequestSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const { sendFriendRequest } = useFriends();
 
   const { isPartnerTyping, sendTyping } = useTypingIndicator({
     roomId: status === 'connected' ? room?.id || null : null,
@@ -54,7 +59,23 @@ const ChatInterface = ({
 
   // Determine peer ID and if we're the initiator
   const peerId = room ? (room.user1_id === userId ? room.user2_id : room.user1_id) : null;
+  const peerAuthId = room ? (room.user1_id === userId ? room.user2_auth_id : room.user1_auth_id) : null;
   const isInitiator = room ? room.user1_id === userId : false;
+
+  // Reset friend request sent when partner changes
+  useEffect(() => {
+    setFriendRequestSent(false);
+  }, [peerId]);
+
+  const handleAddFriend = async () => {
+    if (!peerAuthId || !user) {
+      toast.error("Can't add this user as a friend");
+      return;
+    }
+    if (peerAuthId === user.id) return;
+    await sendFriendRequest(peerAuthId);
+    setFriendRequestSent(true);
+  };
 
   // Initialize WebRTC call
   const {
@@ -152,6 +173,22 @@ const ChatInterface = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {status === "connected" && peerAuthId && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddFriend}
+              disabled={friendRequestSent}
+              className={`h-7 px-2 text-xs rounded-full ${
+                friendRequestSent 
+                  ? "bg-primary/20 text-primary" 
+                  : "bg-accent/20 text-accent hover:bg-accent/30"
+              }`}
+            >
+              <UserPlus className="w-3.5 h-3.5 mr-1" />
+              {friendRequestSent ? "Sent ✓" : "Add Friend"}
+            </Button>
+          )}
           {status === "connected" && (
             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 text-primary text-xs">
               <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
