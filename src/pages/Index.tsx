@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 import VibeParticles from "@/components/landing/VibeParticles";
 import FourTwentySurprise from "@/components/landing/FourTwentySurprise";
@@ -21,7 +23,9 @@ type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings';
 
 const Index = () => {
-  const [appState, setAppState] = useState<AppState>('age-verify');
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [interests, setInterests] = useState<string[]>([]);
@@ -32,12 +36,31 @@ const Index = () => {
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
   useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
 
   const handleAgeVerified = () => {
     setAppState('home');
   };
+
+  if (loading) {
+    return (
+      <>
+        <SmokeBackground />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-foreground/60 text-lg font-display animate-pulse">Loading...</div>
+        </div>
+      </>
+    );
+  }
+
+  if (!user) return null;
 
   const handleStartChat = () => {
     setAppState('mode-select');
