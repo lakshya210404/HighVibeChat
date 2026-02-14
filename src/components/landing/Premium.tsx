@@ -24,7 +24,7 @@ const premiumFeatures = [
   },
 ];
 
-const Premium = () => {
+const Premium = ({ onGoElevate }: { onGoElevate?: () => void }) => {
   return (
     <section className="relative py-32 px-4 overflow-hidden">
       {/* Background glow */}
@@ -75,6 +75,7 @@ const Premium = () => {
             {/* CTA */}
             <div className="text-center">
               <Button
+                onClick={onGoElevate}
                 className="px-10 py-6 text-lg font-display font-semibold bg-gradient-to-r from-secondary to-primary hover:opacity-90 transition-opacity rounded-xl"
               >
                 <Crown className="w-5 h-5 mr-2" />
