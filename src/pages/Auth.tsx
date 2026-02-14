@@ -7,20 +7,34 @@ import { toast } from "sonner";
 import { Leaf, Mail, Lock, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 
+type AuthView = "login" | "signup" | "forgot";
+
 const Auth = () => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signUp, signIn } = useAuth();
+  const { signUp, signIn, resetPassword } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    if (isSignUp) {
+    if (view === "forgot") {
+      const { error } = await resetPassword(email);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Check your email for a reset link! 📧");
+        setView("login");
+      }
+      setLoading(false);
+      return;
+    }
+
+    if (view === "signup") {
       const { error } = await signUp(email, password);
       if (error) {
         toast.error(error.message);
@@ -58,7 +72,11 @@ const Auth = () => {
               <span className="text-gradient">HighVibe</span>Chat
             </h1>
             <p className="text-muted-foreground text-sm mt-2">
-              {isSignUp ? "Create your account" : "Sign in to your account"}
+              {view === "forgot" 
+                ? "Enter your email to receive a reset link" 
+                : view === "signup" 
+                  ? "Create your account" 
+                  : "Sign in to your account"}
             </p>
           </div>
 
@@ -74,25 +92,39 @@ const Auth = () => {
                 required
               />
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10 glass border-border/50"
-                required
-                minLength={6}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
+            {view !== "forgot" && (
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 glass border-border/50"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            )}
+
+            {view === "login" && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setView("forgot")}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             <Button
               type="submit"
@@ -100,18 +132,45 @@ const Auth = () => {
               className="w-full h-12 font-display font-semibold text-lg rounded-xl"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))' }}
             >
-              {loading ? "Loading..." : isSignUp ? "Sign Up" : "Sign In"}
+              {loading 
+                ? "Loading..." 
+                : view === "forgot" 
+                  ? "Send Reset Link" 
+                  : view === "signup" 
+                    ? "Sign Up" 
+                    : "Sign In"}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
-            <button
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary hover:underline font-medium"
-            >
-              {isSignUp ? "Sign In" : "Sign Up"}
-            </button>
+            {view === "forgot" ? (
+              <button
+                onClick={() => setView("login")}
+                className="text-primary hover:underline font-medium"
+              >
+                Back to Sign In
+              </button>
+            ) : view === "signup" ? (
+              <>
+                Already have an account?{" "}
+                <button
+                  onClick={() => setView("login")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Sign In
+                </button>
+              </>
+            ) : (
+              <>
+                Don't have an account?{" "}
+                <button
+                  onClick={() => setView("signup")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </p>
         </div>
       </div>
