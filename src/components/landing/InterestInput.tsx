@@ -66,20 +66,20 @@ const InterestInput = ({
   const displayedSuggestions = showAll ? availableSuggestions : availableSuggestions.slice(0, 6);
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-5">
       {/* Country Picker */}
       <div className="flex items-center justify-between gap-3">
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="glass border-border/50 hover:border-primary/50"
+          size="default"
+          className="bg-card/80 border-border text-foreground hover:border-primary/50 font-medium"
           onClick={() => setShowCountrySelector(true)}
         >
-          <Globe className="w-4 h-4 mr-2 text-primary" />
+          <Globe className="w-5 h-5 mr-2 text-primary" />
           {selectedCountries.length === 0 ? "Worldwide" : `${selectedCountries.length} countries`}
         </Button>
-        <p className="text-xs text-muted-foreground">Pick where your next sesh comes from</p>
+        <p className="text-sm text-foreground/60">Pick where your next sesh comes from</p>
       </div>
 
       {/* Input Field */}
@@ -89,15 +89,15 @@ const InterestInput = ({
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Add your interests (optional)"
-          className="glass h-14 pl-4 pr-12 text-base border-border/50 focus:border-primary/50"
+          className="bg-card/80 h-16 pl-5 pr-14 text-lg border-border focus:border-primary/50 placeholder:text-foreground/40"
           maxLength={30}
         />
         <button
           onClick={() => addInterest(inputValue)}
           disabled={!inputValue.trim() || interests.length >= maxInterests}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-lg bg-primary/30 text-primary hover:bg-primary/40 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-5 h-5" />
         </button>
       </div>
 
@@ -120,11 +120,11 @@ const InterestInput = ({
               >
                 <Badge
                   variant="secondary"
-                  className="px-3 py-1.5 text-sm bg-primary/20 text-primary border-primary/30 hover:bg-primary/30 cursor-pointer group"
+                  className="px-4 py-2 text-base bg-primary/25 text-primary border-primary/40 hover:bg-primary/35 cursor-pointer group"
                   onClick={() => removeInterest(interest)}
                 >
                   {interest}
-                  <X className="w-3 h-3 ml-2 opacity-60 group-hover:opacity-100 transition-opacity" />
+                  <X className="w-3.5 h-3.5 ml-2 opacity-60 group-hover:opacity-100 transition-opacity" />
                 </Badge>
               </motion.div>
             ))}
@@ -134,14 +134,14 @@ const InterestInput = ({
 
       {/* Suggested Interests */}
       {interests.length < maxInterests && (
-        <div className="space-y-2">
-          <p className="text-xs text-muted-foreground">Quick add:</p>
-          <div className="flex flex-wrap gap-2">
+        <div className="space-y-3">
+          <p className="text-sm font-medium text-foreground/70">Quick add:</p>
+          <div className="flex flex-wrap gap-2.5">
             {displayedSuggestions.map((suggestion) => (
               <motion.button
                 key={suggestion}
                 onClick={() => addInterest(suggestion)}
-                className="px-3 py-1.5 text-sm rounded-full border border-border/50 text-muted-foreground hover:text-foreground hover:border-primary/50 hover:bg-primary/10 transition-all"
+                className="px-4 py-2 text-base rounded-full border border-border bg-card/70 text-foreground/80 hover:text-foreground hover:border-primary/50 hover:bg-primary/15 transition-all"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -151,7 +151,7 @@ const InterestInput = ({
             {availableSuggestions.length > 6 && (
               <button
                 onClick={() => setShowAll(!showAll)}
-                className="px-3 py-1.5 text-sm text-primary hover:underline"
+                className="px-4 py-2 text-base text-primary hover:underline font-medium"
               >
                 {showAll ? "Show less" : `+${availableSuggestions.length - 6} more`}
               </button>
@@ -161,7 +161,7 @@ const InterestInput = ({
       )}
 
       {/* Limit indicator */}
-      <p className="text-xs text-muted-foreground text-right">
+      <p className="text-sm text-foreground/50 text-right">
         {interests.length}/{maxInterests} interests
       </p>
 
