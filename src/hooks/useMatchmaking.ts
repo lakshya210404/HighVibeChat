@@ -157,7 +157,7 @@ export const useMatchmaking = (
         supabase.functions.invoke('matchmaking', {
           body: { action: 'leave_queue', userId }
         }).catch(() => {});
-      }, 20000);
+      }, 10000);
     } catch (error) {
       console.error('Join queue error:', error);
       setStatus('idle');
