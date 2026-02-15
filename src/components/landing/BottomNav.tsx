@@ -1,9 +1,9 @@
-import { Home, Palette, Settings, Flame, Users } from 'lucide-react';
+import { Home, Palette, Settings, Flame, Users, MessageSquareHeart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface BottomNavProps {
-  activeTab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends';
-  onTabChange: (tab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends') => void;
+  activeTab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
+  onTabChange: (tab: 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions') => void;
   friendRequestCount?: number;
 }
 
@@ -11,6 +11,7 @@ const BottomNav = ({ activeTab, onTabChange, friendRequestCount = 0 }: BottomNav
   const tabs = [
     { id: 'home' as const, label: 'Home', icon: Home },
     { id: 'friends' as const, label: 'Friends', icon: Users },
+    { id: 'confessions' as const, label: 'Confess', icon: MessageSquareHeart },
     { id: 'elevate' as const, label: 'Elevate', icon: Flame },
     { id: 'theme' as const, label: 'Vibes', icon: Palette },
     { id: 'settings' as const, label: 'Settings', icon: Settings },

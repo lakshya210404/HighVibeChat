@@ -18,13 +18,15 @@ import ThemeSelector from "@/components/landing/ThemeSelector";
 import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
-import { SessionVibe } from "@/components/landing/SessionVibes";
+import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
 import { useFriendNotifications } from "@/hooks/useFriendNotifications";
 
+import { SessionVibe } from "@/components/landing/SessionVibes";
+
 type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
-type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends';
+type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -94,6 +96,9 @@ const Index = () => {
   };
 
   const renderContent = () => {
+    if (activeTab === 'confessions') {
+      return <ConfessionsPanel />;
+    }
     if (activeTab === 'friends') {
       return <FriendsPanel />;
     }

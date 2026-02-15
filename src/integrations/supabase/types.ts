@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      confession_likes: {
+        Row: {
+          confession_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          confession_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          confession_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confession_likes_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      confessions: {
+        Row: {
+          content: string
+          created_at: string
+          emoji: string | null
+          id: string
+          likes_count: number
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          likes_count?: number
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          likes_count?: number
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       friend_requests: {
         Row: {
           created_at: string
