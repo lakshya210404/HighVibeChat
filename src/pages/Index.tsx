@@ -21,6 +21,7 @@ import FriendsPanel from "@/components/friends/FriendsPanel";
 import { SessionVibe } from "@/components/landing/SessionVibes";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
+import { useFriendNotifications } from "@/hooks/useFriendNotifications";
 
 type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends';
@@ -40,7 +41,8 @@ const Index = () => {
 
   // Track online presence
   usePresence();
-  const { incomingRequests } = useFriends();
+  const { friends, incomingRequests } = useFriends();
+  useFriendNotifications(friends, incomingRequests);
 
   useEffect(() => {
     if (!loading && !user) {
