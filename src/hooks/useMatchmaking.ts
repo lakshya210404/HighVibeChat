@@ -34,13 +34,19 @@ export const useMatchmaking = (
   const [messages, setMessages] = useState<Message[]>([]);
   const [onlineCount, setOnlineCount] = useState(420);
   const [sharedInterests, setSharedInterests] = useState<string[]>([]);
+  const [isAiFallback, setIsAiFallback] = useState(false);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
+  const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const clearPolling = useCallback(() => {
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
+    }
+    if (aiTimeoutRef.current) {
+      clearTimeout(aiTimeoutRef.current);
+      aiTimeoutRef.current = null;
     }
   }, []);
 
@@ -130,6 +136,7 @@ export const useMatchmaking = (
             clearPolling();
             setRoom(checkData.room);
             setStatus('connected');
+            setIsAiFallback(false);
             if (checkData.sharedInterests) setSharedInterests(checkData.sharedInterests);
             subscribeToRoom(checkData.room.id);
           }
@@ -137,6 +144,20 @@ export const useMatchmaking = (
           console.error('Polling error:', err);
         }
       }, 2000);
+
+      // AI fallback after 20 seconds
+      aiTimeoutRef.current = setTimeout(() => {
+        // Only activate if still searching
+        clearPolling();
+        setIsAiFallback(true);
+        setStatus('connected');
+        setRoom(null);
+        setMessages([]);
+        // Clean up queue entry
+        supabase.functions.invoke('matchmaking', {
+          body: { action: 'leave_queue', userId }
+        }).catch(() => {});
+      }, 20000);
     } catch (error) {
       console.error('Join queue error:', error);
       setStatus('idle');
@@ -163,6 +184,7 @@ export const useMatchmaking = (
 
     setRoom(null);
     setMessages([]);
+    setIsAiFallback(false);
     setStatus('idle');
   }, [room, userId, clearPolling]);
 
@@ -251,8 +273,10 @@ export const useMatchmaking = (
     status,
     room,
     messages,
+    setMessages,
     onlineCount,
     sharedInterests,
+    isAiFallback,
     joinQueue,
     leaveQueue,
     leaveRoom,
