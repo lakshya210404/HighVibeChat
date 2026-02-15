@@ -17,9 +17,11 @@ export const useAiChat = () => {
     conversationHistory.current.push({ role: "user", content: userMessage });
     setIsAiTyping(true);
 
-    // Simulate human-like typing delay (1-3 seconds)
-    const delay = 1000 + Math.random() * 2000;
-    await new Promise(resolve => setTimeout(resolve, delay));
+    // Initial "seen" delay before they start "typing" (1-2 seconds)
+    const seenDelay = 1000 + Math.random() * 1000;
+    await new Promise(resolve => setTimeout(resolve, seenDelay));
+
+    let responseText = "";
 
     try {
       const resp = await fetch(
@@ -41,7 +43,6 @@ export const useAiChat = () => {
       const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let textBuffer = "";
-      let fullResponse = "";
 
       while (true) {
         const { done, value } = await reader.read();
@@ -64,7 +65,7 @@ export const useAiChat = () => {
             const parsed = JSON.parse(jsonStr);
             const content = parsed.choices?.[0]?.delta?.content as string | undefined;
             if (content) {
-              fullResponse += content;
+              responseText += content;
             }
           } catch {
             textBuffer = line + "\n" + textBuffer;
@@ -72,27 +73,33 @@ export const useAiChat = () => {
           }
         }
       }
-
-      // Use the complete response
-      if (fullResponse) {
-        conversationHistory.current.push({ role: "assistant", content: fullResponse });
-        onResponse(fullResponse);
-      }
     } catch (error) {
       console.error("AI chat error:", error);
-      // Fallback casual response
       const fallbacks = [
         "lol sorry my phone glitched for a sec 😅",
         "wait what were we talking about again",
         "bruh my wifi is acting up 💀",
         "sorry was distracted for a sec haha",
       ];
-      const fallback = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-      conversationHistory.current.push({ role: "assistant", content: fallback });
-      onResponse(fallback);
-    } finally {
-      setIsAiTyping(false);
+      responseText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
+
+    // Simulate realistic human typing time based on message length
+    // Average person types ~40 words per minute on mobile = ~3.3 chars/sec
+    // Add some randomness to feel natural
+    const charsPerSecond = 2.5 + Math.random() * 2; // 2.5-4.5 chars/sec
+    const typingTimeMs = Math.min(
+      (responseText.length / charsPerSecond) * 1000,
+      12000 // cap at 12 seconds so it doesn't feel too slow
+    );
+    // Subtract time already spent waiting for the API response, minimum 500ms
+    const remainingDelay = Math.max(typingTimeMs, 500);
+    await new Promise(resolve => setTimeout(resolve, remainingDelay));
+
+    // Now show the message
+    conversationHistory.current.push({ role: "assistant", content: responseText });
+    onResponse(responseText);
+    setIsAiTyping(false);
   }, []);
 
   const resetAiChat = useCallback(() => {
