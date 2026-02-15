@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus } from "lucide-react";
@@ -6,6 +6,7 @@ import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useFriends } from "@/hooks/useFriends";
+import { useAiChat } from "@/hooks/useAiChat";
 import { useAuth } from "@/contexts/AuthContext";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
@@ -37,12 +38,16 @@ const ChatInterface = ({
     status,
     room,
     messages,
+    setMessages,
     joinQueue,
     leaveQueue,
     leaveRoom,
     sendMessage,
     findNext,
+    isAiFallback,
   } = useMatchmaking(interests, gender, lookingFor, isPremium, selectedCountries, selectedVibe);
+
+  const { isAiTyping, sendAiMessage, resetAiChat } = useAiChat();
 
   const [inputValue, setInputValue] = useState("");
   const [friendRequestSent, setFriendRequestSent] = useState(false);
@@ -113,7 +118,7 @@ const ChatInterface = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isPartnerTyping]);
+  }, [messages, isPartnerTyping, isAiTyping]);
 
   // Start searching when component mounts
   useEffect(() => {
@@ -129,11 +134,37 @@ const ChatInterface = ({
     
     const messageContent = inputValue.trim();
     setInputValue("");
-    await sendMessage(messageContent);
+
+    if (isAiFallback) {
+      // Add user message optimistically
+      const userMsg = {
+        id: crypto.randomUUID(),
+        room_id: "ai-room",
+        sender_id: userId,
+        content: messageContent,
+        created_at: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, userMsg]);
+
+      // Get AI response
+      await sendAiMessage(messageContent, (aiResponse) => {
+        const aiMsg = {
+          id: crypto.randomUUID(),
+          room_id: "ai-room",
+          sender_id: "ai-partner",
+          content: aiResponse,
+          created_at: new Date().toISOString(),
+        };
+        setMessages(prev => [...prev, aiMsg]);
+      });
+    } else {
+      await sendMessage(messageContent);
+    }
   };
 
   const handleNext = async () => {
     cleanupWebRTC();
+    resetAiChat();
     await findNext();
   };
 
@@ -173,7 +204,7 @@ const ChatInterface = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {status === "connected" && peerAuthId && (
+          {status === "connected" && peerAuthId && !isAiFallback && (
             <Button
               variant="ghost"
               size="sm"
@@ -316,7 +347,7 @@ const ChatInterface = ({
                     </div>
                   </div>
                 ))}
-                {isPartnerTyping && (
+                {(isPartnerTyping || isAiTyping) && (
                   <div className="flex justify-start">
                     <div className="bg-muted text-muted-foreground px-3 py-2 rounded-2xl rounded-bl-sm">
                       <div className="flex gap-1 items-center h-4">
