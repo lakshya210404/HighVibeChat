@@ -318,6 +318,39 @@ export type Database = {
           },
         ]
       }
+      premium_access: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          product_id: string
+          started_at: string
+          stripe_session_id: string | null
+          tier: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          product_id: string
+          started_at?: string
+          stripe_session_id?: string | null
+          tier: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          product_id?: string
+          started_at?: string
+          stripe_session_id?: string | null
+          tier?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

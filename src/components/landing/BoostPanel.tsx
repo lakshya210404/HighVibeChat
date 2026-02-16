@@ -22,7 +22,7 @@ const elevateOptions: ElevateOption[] = [
   {
     id: 'light_up',
     name: 'Light Up',
-    tagline: 'Quick hit of priority',
+    tagline: '30 minutes of premium vibes',
     icon: <Zap className="w-6 h-6" />,
     gradient: 'from-emerald-500/20 to-green-600/10',
     features: ['Priority queue', 'Skip the wait'],
@@ -30,7 +30,7 @@ const elevateOptions: ElevateOption[] = [
   {
     id: 'blaze_mode',
     name: 'Blaze Mode',
-    tagline: 'The perfect session',
+    tagline: '1 hour of elevated access',
     icon: <Flame className="w-6 h-6" />,
     gradient: 'from-amber-500/20 to-orange-600/10',
     features: ['Top priority', 'Gender filters', 'Better matches'],
@@ -39,7 +39,7 @@ const elevateOptions: ElevateOption[] = [
   {
     id: 'elevated',
     name: 'Elevated',
-    tagline: 'Maximum vibes only',
+    tagline: '24 hours of maximum vibes',
     icon: <Rocket className="w-6 h-6" />,
     gradient: 'from-purple-500/20 to-violet-600/10',
     features: ['VIP status', 'All filters', 'Premium matches', 'Priority support'],
@@ -67,17 +67,7 @@ const BoostPanel = () => {
     }
 
     if (subscribed) {
-      // Open customer portal to manage subscription
-      try {
-        setCheckoutLoading(true);
-        const { data, error } = await supabase.functions.invoke('customer-portal');
-        if (error) throw error;
-        if (data?.url) window.open(data.url, '_blank');
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to open subscription management');
-      } finally {
-        setCheckoutLoading(false);
-      }
+      toast.info("You already have active premium access! 🔥");
       return;
     }
 
@@ -85,7 +75,7 @@ const BoostPanel = () => {
     try {
       setCheckoutLoading(true);
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: tier.price_id },
+        body: { priceId: tier.price_id, tier: selectedOption },
       });
       if (error) throw error;
       if (data?.url) window.open(data.url, '_blank');
@@ -131,8 +121,8 @@ const BoostPanel = () => {
           </h2>
           <p className="text-muted-foreground text-sm">
             {subscribed
-              ? `You're on ${currentTier ? TIERS[currentTier].name : 'a premium'} plan 🔥`
-              : 'Get higher priority and unlock premium features'}
+              ? `You're on ${currentTier ? TIERS[currentTier].name : 'a premium'} plan — expires soon 🔥`
+              : 'Get time-based premium access for your session'}
           </p>
         </motion.div>
 
@@ -210,7 +200,7 @@ const BoostPanel = () => {
                     <span className="font-display font-bold text-xl text-foreground">
                       ${TIERS[option.id].price.toFixed(2)}
                     </span>
-                    <div className="text-xs text-muted-foreground">/mo</div>
+                    <div className="text-xs text-muted-foreground">{TIERS[option.id].duration}</div>
                   </div>
                 </div>
 
@@ -261,8 +251,8 @@ const BoostPanel = () => {
               {checkoutLoading
                 ? 'Loading...'
                 : subscribed
-                  ? 'Manage Subscription'
-                  : `Get ${selectedPlan?.name} • $${tierPrice.toFixed(2)}/mo`}
+                  ? 'Premium Active 🔥'
+                  : `Get ${selectedPlan?.name} • $${tierPrice.toFixed(2)} for ${TIERS[selectedOption].duration}`}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-accent to-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </Button>
@@ -274,7 +264,7 @@ const BoostPanel = () => {
           transition={{ delay: 0.6 }}
           className="text-center text-xs text-muted-foreground mt-4 space-y-1"
         >
-          <span className="block">Monthly subscription • Cancel anytime</span>
+          <span className="block">One-time purchase • Access starts immediately</span>
         </motion.p>
       </motion.div>
 

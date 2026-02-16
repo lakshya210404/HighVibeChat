@@ -82,7 +82,7 @@ const Premium = ({ onGoElevate }: { onGoElevate?: () => void }) => {
                 Go Premium
               </Button>
               <p className="text-sm text-muted-foreground mt-4">
-                Starting at $4.20/month
+                Starting at $4.20 for 30 minutes
               </p>
             </div>
           </div>

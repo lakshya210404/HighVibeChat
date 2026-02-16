@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 import VibeParticles from "@/components/landing/VibeParticles";
@@ -24,6 +24,8 @@ import UserHeader from "@/components/landing/UserHeader";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
 import { useFriendNotifications } from "@/hooks/useFriendNotifications";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 import { SessionVibe } from "@/components/landing/SessionVibes";
 
@@ -31,7 +33,8 @@ type AppState = 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
-  const { user, loading, subscribed, gender: userGender, guestInfo, isGuest, updateGender } = useAuth();
+  const { user, loading, subscribed, gender: userGender, guestInfo, isGuest, updateGender, checkSubscription } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
@@ -64,6 +67,40 @@ const Index = () => {
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
+
+  // Handle checkout success — activate premium access
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    const sessionId = searchParams.get("session_id");
+    if (checkout === "success" && sessionId && user) {
+      const activate = async () => {
+        try {
+          const { data: { session: authSession } } = await supabase.auth.getSession();
+          if (!authSession) return;
+          const { data, error } = await supabase.functions.invoke("activate-premium", {
+            body: { sessionId },
+            headers: { Authorization: `Bearer ${authSession.access_token}` },
+          });
+          if (error) throw error;
+          if (data?.already_activated) {
+            toast.info("Premium already activated!");
+          } else {
+            toast.success(`${data.tier ? data.tier.replace("_", " ") : "Premium"} activated! 🔥`);
+          }
+          await checkSubscription();
+        } catch (err: any) {
+          console.error("Activation error:", err);
+          toast.error("Failed to activate premium. Please refresh the page.");
+        }
+        // Clean URL
+        setSearchParams({});
+      };
+      activate();
+    } else if (checkout === "cancel") {
+      toast.info("Checkout cancelled");
+      setSearchParams({});
+    }
+  }, [searchParams, user]);
 
   if (loading) {
     return (
