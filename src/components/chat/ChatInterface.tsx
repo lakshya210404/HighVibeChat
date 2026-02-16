@@ -52,8 +52,17 @@ const ChatInterface = ({
     isAiFallback,
   } = useMatchmaking(interests, gender, lookingFor, isPremium, selectedCountries, selectedVibe);
 
-  // Pass the desired gender so AI acts as the gender the user wants to talk to
-  const { isAiTyping, sendAiMessage, resetAiChat } = useAiChat(lookingFor !== 'everyone' ? lookingFor : undefined);
+  // Determine which gender the AI should act as
+  // Males mostly get a female AI (85% chance), females get male AI (85% chance)
+  // If user has a specific preference, respect that
+  const getAiGender = () => {
+    if (lookingFor !== 'everyone') return lookingFor;
+    if (gender === 'male') return Math.random() < 0.85 ? 'female' : 'male';
+    if (gender === 'female') return Math.random() < 0.85 ? 'male' : 'female';
+    return undefined;
+  };
+  const [aiGender] = useState(getAiGender);
+  const { isAiTyping, sendAiMessage, resetAiChat } = useAiChat(aiGender);
 
   const [inputValue, setInputValue] = useState("");
   const [friendRequestSent, setFriendRequestSent] = useState(false);
