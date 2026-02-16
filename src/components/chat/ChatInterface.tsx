@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus } from "lucide-react";
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus, Crown } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -14,6 +14,7 @@ import { toast } from "sonner";
 
 interface ChatInterfaceProps {
   onLeave: () => void;
+  onGoElevate?: () => void;
   mode: ChatMode;
   interests?: string[];
   gender?: string;
@@ -25,6 +26,7 @@ interface ChatInterfaceProps {
 
 const ChatInterface = ({ 
   onLeave, 
+  onGoElevate,
   mode, 
   interests = [],
   gender = 'other',
@@ -205,6 +207,17 @@ const ChatInterface = ({
         </div>
 
         <div className="flex items-center gap-2">
+          {!isPremium && onGoElevate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onGoElevate}
+              className="h-7 px-2 text-xs rounded-full bg-gradient-to-r from-primary/20 to-accent/20 text-primary hover:from-primary/30 hover:to-accent/30"
+            >
+              <Crown className="w-3.5 h-3.5 mr-1" />
+              Elevate
+            </Button>
+          )}
           {status === "connected" && peerAuthId && !isAiFallback && (
             <Button
               variant="ghost"

@@ -159,6 +159,7 @@ const Index = () => {
       {appState === 'chat' && (
         <ChatInterface 
           onLeave={handleLeaveChat} 
+          onGoElevate={() => { setAppState('home'); setActiveTab('elevate'); }}
           mode={chatMode} 
           interests={interests}
           gender={gender}
