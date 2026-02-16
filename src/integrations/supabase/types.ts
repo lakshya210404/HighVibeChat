@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      confession_comments: {
+        Row: {
+          confession_id: string
+          content: string
+          created_at: string
+          display_name: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          confession_id: string
+          content: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          confession_id?: string
+          content?: string
+          created_at?: string
+          display_name?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confession_comments_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confession_likes: {
         Row: {
           confession_id: string
@@ -43,32 +78,73 @@ export type Database = {
           },
         ]
       }
+      confession_votes: {
+        Row: {
+          confession_id: string
+          created_at: string
+          id: string
+          user_id: string
+          vote_type: string
+        }
+        Insert: {
+          confession_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+          vote_type: string
+        }
+        Update: {
+          confession_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          vote_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confession_votes_confession_id_fkey"
+            columns: ["confession_id"]
+            isOneToOne: false
+            referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confessions: {
         Row: {
+          comments_count: number
           content: string
           created_at: string
+          downvotes: number
           emoji: string | null
           id: string
           likes_count: number
           title: string | null
+          upvotes: number
           user_id: string | null
         }
         Insert: {
+          comments_count?: number
           content: string
           created_at?: string
+          downvotes?: number
           emoji?: string | null
           id?: string
           likes_count?: number
           title?: string | null
+          upvotes?: number
           user_id?: string | null
         }
         Update: {
+          comments_count?: number
           content?: string
           created_at?: string
+          downvotes?: number
           emoji?: string | null
           id?: string
           likes_count?: number
           title?: string | null
+          upvotes?: number
           user_id?: string | null
         }
         Relationships: []
