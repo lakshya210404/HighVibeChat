@@ -7,7 +7,6 @@ export interface Friend {
   id: string;
   friendship_id: string;
   display_name: string;
-  email: string;
   is_online: boolean;
   last_seen: string;
 }
@@ -66,8 +65,7 @@ export const useFriends = () => {
       return {
         id: fid,
         friendship_id: friendship?.id || "",
-        display_name: profile?.display_name || profile?.email?.split("@")[0] || "Unknown",
-        email: profile?.email || "",
+        display_name: profile?.display_name || "Unknown",
         is_online: pres?.is_online || false,
         last_seen: pres?.last_seen || "",
       };

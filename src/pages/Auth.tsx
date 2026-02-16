@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 
@@ -15,6 +16,7 @@ const Auth = () => {
   const [view, setView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { user, loading: authLoading, signUp, signIn, resetPassword } = useAuth();
@@ -48,10 +50,20 @@ const Auth = () => {
     }
 
     if (view === "signup") {
+      if (!displayName.trim()) {
+        toast.error("Please choose a display name!");
+        setLoading(false);
+        return;
+      }
       const { error } = await signUp(email, password);
       if (error) {
         toast.error(error.message);
       } else {
+        // Save display name to profile after signup
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", newUser.id);
+        }
         toast.success("Check your email to confirm your account! 🌿");
       }
     } else {
@@ -174,6 +186,20 @@ const Auth = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {view === "signup" && (
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Choose a display name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      className="pl-10 glass border-border/50"
+                      required
+                      maxLength={30}
+                    />
+                  </div>
+                )}
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
