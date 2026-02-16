@@ -35,9 +35,20 @@ const Auth = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleUsernameNext = () => {
-    if (!username.trim() || username.trim().length < 2) {
+  const [checking, setChecking] = useState(false);
+
+  const handleUsernameNext = async () => {
+    const trimmed = username.trim();
+    if (!trimmed || trimmed.length < 2) {
       toast.error("Pick a name with at least 2 characters");
+      return;
+    }
+    setChecking(true);
+    const { isDisplayNameTaken } = await import("@/lib/checkDisplayName");
+    const taken = await isDisplayNameTaken(trimmed);
+    setChecking(false);
+    if (taken) {
+      toast.error("That name is already taken! Try another one 🌿");
       return;
     }
     setStep("gender");
@@ -175,11 +186,11 @@ const Auth = () => {
 
               <Button
                 onClick={handleUsernameNext}
-                disabled={!username.trim()}
+                disabled={!username.trim() || checking}
                 className="w-full h-12 font-display font-semibold text-lg rounded-xl"
                 style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
               >
-                Next
+                {checking ? "Checking..." : "Next"}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground/60 mt-6">
