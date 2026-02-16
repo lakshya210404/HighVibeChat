@@ -80,7 +80,7 @@ const PremiumPopup = ({ onGoElevate }: PremiumPopupProps) => {
               className="w-full h-9 text-xs font-display font-semibold bg-gradient-to-r from-secondary to-primary hover:opacity-90 rounded-lg"
             >
               <Crown className="w-3.5 h-3.5 mr-1.5" />
-              Elevate Now — from $4.20/mo
+              Elevate Now — from $4.20
             </Button>
           </div>
         </motion.div>
