@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquareHeart, ChevronUp, ChevronDown, MessageCircle, Send, Trash2, Globe, User } from "lucide-react";
+import { MessageSquareHeart, ThumbsUp, ThumbsDown, MessageCircle, Send, Trash2, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -307,7 +307,6 @@ const ConfessionCard = ({
   visitorId: string;
   visitorName: string;
 }) => {
-  const score = confession.upvotes - confession.downvotes;
 
   return (
     <motion.div
@@ -316,81 +315,71 @@ const ConfessionCard = ({
       exit={{ opacity: 0, y: -10 }}
       className="rounded-xl bg-card/70 border border-border hover:border-primary/20 transition-all overflow-hidden"
     >
-      <div className="flex">
-        {/* Vote column */}
-        <div className="flex flex-col items-center gap-0.5 py-3 px-2 bg-muted/30">
+      <div className="p-3">
+        {/* Meta line */}
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className="text-lg">{confession.emoji}</span>
+          <span className="text-[11px] text-muted-foreground/60">
+            {formatDistanceToNow(new Date(confession.created_at), { addSuffix: true })}
+          </span>
+        </div>
+
+        {/* Title */}
+        {confession.title && (
+          <h3 className="font-display font-bold text-foreground mb-1 leading-snug">
+            {confession.title}
+          </h3>
+        )}
+
+        {/* Body */}
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
+          {confession.content}
+        </p>
+
+        {/* Actions bar */}
+        <div className="flex items-center gap-3 mt-3">
           <button
             onClick={() => onVote("up")}
-            className={`p-1 rounded transition-colors ${
+            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
               confession.my_vote === "up"
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground hover:text-primary hover:bg-primary/10"
             }`}
           >
-            <ChevronUp className="w-5 h-5" />
+            <ThumbsUp className={`w-3.5 h-3.5 ${confession.my_vote === "up" ? "fill-current" : ""}`} />
+            {confession.upvotes > 0 && confession.upvotes}
           </button>
-          <span className={`text-xs font-bold min-w-[20px] text-center ${
-            score > 0 ? "text-primary" : score < 0 ? "text-destructive" : "text-muted-foreground"
-          }`}>
-            {score}
-          </span>
           <button
             onClick={() => onVote("down")}
-            className={`p-1 rounded transition-colors ${
+            className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
               confession.my_vote === "down"
                 ? "text-destructive bg-destructive/10"
                 : "text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             }`}
           >
-            <ChevronDown className="w-5 h-5" />
+            <ThumbsDown className={`w-3.5 h-3.5 ${confession.my_vote === "down" ? "fill-current" : ""}`} />
+            {confession.downvotes > 0 && confession.downvotes}
           </button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 p-3 min-w-0">
-          {/* Meta line */}
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-lg">{confession.emoji}</span>
-            <span className="text-[11px] text-muted-foreground/60">
-              {formatDistanceToNow(new Date(confession.created_at), { addSuffix: true })}
-            </span>
-          </div>
-
-          {/* Title */}
-          {confession.title && (
-            <h3 className="font-display font-bold text-foreground mb-1 leading-snug">
-              {confession.title}
-            </h3>
-          )}
-
-          {/* Body */}
-          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
-            {confession.content}
-          </p>
-
-          {/* Actions bar */}
-          <div className="flex items-center gap-3 mt-3">
+          <button
+            onClick={onToggleComments}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
+              expanded
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+            }`}
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            {confession.comments_count > 0 ? confession.comments_count : ""} Comments
+          </button>
+          {isOwner && (
             <button
-              onClick={onToggleComments}
-              className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
-                expanded
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
-              }`}
+              onClick={onDelete}
+              className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
             >
-              <MessageCircle className="w-3.5 h-3.5" />
-              {confession.comments_count > 0 ? confession.comments_count : ""} Comments
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
             </button>
-            {isOwner && (
-              <button
-                onClick={onDelete}
-                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </button>
-            )}
-          </div>
+          )}
         </div>
       </div>
 
