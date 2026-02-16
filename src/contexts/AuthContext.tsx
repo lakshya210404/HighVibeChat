@@ -32,15 +32,18 @@ interface AuthContextType {
   subscribed: boolean;
   currentTier: TierKey | null;
   subscriptionEnd: string | null;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  displayName: string | null;
+  signUp: (username: string, password: string) => Promise<{ error: any }>;
+  signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: any }>;
-  updatePassword: (password: string) => Promise<{ error: any }>;
+  updateDisplayName: (name: string) => Promise<void>;
   checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Convert username to a pseudo-email for Supabase
+const toEmail = (username: string) => `${username.toLowerCase().replace(/[^a-z0-9_]/g, "")}@highvibechat.app`;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -49,6 +52,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [subscribed, setSubscribed] = useState(false);
   const [currentTier, setCurrentTier] = useState<TierKey | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
+
+  const fetchDisplayName = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name")
+      .eq("id", userId)
+      .maybeSingle();
+    setDisplayName(data?.display_name || null);
+  };
 
   const checkSubscription = async () => {
     try {
@@ -81,11 +94,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(session?.user ?? null);
       setLoading(false);
       if (session?.user) {
-        setTimeout(checkSubscription, 0);
+        setTimeout(() => {
+          checkSubscription();
+          fetchDisplayName(session.user.id);
+        }, 0);
       } else {
         setSubscribed(false);
         setCurrentTier(null);
         setSubscriptionEnd(null);
+        setDisplayName(null);
       }
     });
 
@@ -93,7 +110,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      if (session?.user) checkSubscription();
+      if (session?.user) {
+        checkSubscription();
+        fetchDisplayName(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -106,40 +126,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => clearInterval(interval);
   }, [user]);
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+  const signUp = async (username: string, password: string) => {
+    const email = toEmail(username);
+    
+    // Check if username is already taken by checking profiles
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("display_name", username)
+      .maybeSingle();
+    
+    if (existing) {
+      return { error: { message: "Username already taken! Try another one." } };
+    }
+
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-    return { error };
+    
+    if (error) return { error };
+
+    // Update display name in profile
+    if (data.user) {
+      await supabase
+        .from("profiles")
+        .update({ display_name: username, email: null })
+        .eq("id", data.user.id);
+      setDisplayName(username);
+    }
+    
+    return { error: null };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (username: string, password: string) => {
+    const email = toEmail(username);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
+    return { error: error ? { message: "Invalid username or password" } : null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
-  const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    return { error };
-  };
-
-  const updatePassword = async (password: string) => {
-    const { error } = await supabase.auth.updateUser({ password });
-    return { error };
+  const updateDisplayName = async (name: string) => {
+    if (!user) return;
+    await supabase
+      .from("profiles")
+      .update({ display_name: name })
+      .eq("id", user.id);
+    setDisplayName(name);
   };
 
   return (
     <AuthContext.Provider value={{
-      user, session, loading, subscribed, currentTier, subscriptionEnd,
-      signUp, signIn, signOut, resetPassword, updatePassword, checkSubscription,
+      user, session, loading, subscribed, currentTier, subscriptionEnd, displayName,
+      signUp, signIn, signOut, updateDisplayName, checkSubscription,
     }}>
       {children}
     </AuthContext.Provider>

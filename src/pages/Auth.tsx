@@ -1,34 +1,69 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SmokeBackground from "@/components/ui/SmokeBackground";
-import { useGuest } from "@/contexts/GuestContext";
+
+type AuthView = "login" | "signup";
 
 const Auth = () => {
   const [showSplash, setShowSplash] = useState(true);
+  const [view, setView] = useState<AuthView>("signup");
   const [username, setUsername] = useState("");
-  const { setGuestName, hasEnteredSite } = useGuest();
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const { user, loading: authLoading, signUp, signIn } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (hasEnteredSite) {
+    if (!authLoading && user) {
       navigate("/");
     }
-  }, [hasEnteredSite, navigate]);
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2800);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleEnter = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) return;
-    setGuestName(username.trim());
-    navigate("/");
+    if (!username.trim() || !password) return;
+    setLoading(true);
+
+    if (view === "signup") {
+      if (username.trim().length < 3) {
+        toast.error("Username must be at least 3 characters");
+        setLoading(false);
+        return;
+      }
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+        toast.error("Username can only contain letters, numbers, and underscores");
+        setLoading(false);
+        return;
+      }
+      const { error } = await signUp(username.trim(), password);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Welcome to HighVibeChat! 🌿");
+        navigate("/");
+      }
+    } else {
+      const { error } = await signIn(username.trim(), password);
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Welcome back! 🔥");
+        navigate("/");
+      }
+    }
+    setLoading(false);
   };
 
   return (
@@ -109,7 +144,7 @@ const Auth = () => {
           </motion.div>
         ) : (
           <motion.div
-            key="username"
+            key="auth"
             className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -129,16 +164,18 @@ const Auth = () => {
                   <span className="text-gradient">HighVibe</span>Chat
                 </h1>
                 <p className="text-muted-foreground text-sm mt-2">
-                  Choose a name to get started
+                  {view === "signup"
+                    ? "Pick a username and create your account"
+                    : "Sign in with your username"}
                 </p>
               </div>
 
-              <form onSubmit={handleEnter} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     type="text"
-                    placeholder="Your display name"
+                    placeholder="Username"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 glass border-border/50"
@@ -148,18 +185,66 @@ const Auth = () => {
                   />
                 </div>
 
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 pr-10 glass border-border/50"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={!username.trim()}
+                  disabled={loading || !username.trim() || !password}
                   className="w-full h-12 font-display font-semibold text-lg rounded-xl"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))' }}
                 >
-                  Enter HighVibeChat
+                  {loading
+                    ? "Loading..."
+                    : view === "signup"
+                      ? "Create Account"
+                      : "Sign In"}
                 </Button>
               </form>
 
-              <p className="text-center text-xs text-muted-foreground mt-6">
-                No account needed • Just pick a name and vibe
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                {view === "signup" ? (
+                  <>
+                    Already have an account?{" "}
+                    <button
+                      onClick={() => setView("login")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign In
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    Don't have an account?{" "}
+                    <button
+                      onClick={() => setView("signup")}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      Sign Up
+                    </button>
+                  </>
+                )}
+              </p>
+
+              <p className="text-center text-xs text-muted-foreground/60 mt-4">
+                Anonymous • No email needed • Just vibes
               </p>
             </div>
           </motion.div>

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useGuest } from "@/contexts/GuestContext";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 import VibeParticles from "@/components/landing/VibeParticles";
 import FourTwentySurprise from "@/components/landing/FourTwentySurprise";
@@ -19,7 +18,6 @@ import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
-import AuthGate from "@/components/auth/AuthGate";
 import UserHeader from "@/components/landing/UserHeader";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
@@ -32,7 +30,6 @@ type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessio
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const { hasEnteredSite } = useGuest();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
@@ -44,23 +41,34 @@ const Index = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
-  // Track online presence (only for authenticated users)
+  // Track online presence
   usePresence();
   const { friends, incomingRequests } = useFriends();
   useFriendNotifications(friends, incomingRequests);
 
-  // Redirect to auth if no guest name set
+  // Redirect to auth if not logged in
   useEffect(() => {
-    if (!loading && !hasEnteredSite) {
+    if (!loading && !user) {
       navigate("/auth");
     }
-  }, [hasEnteredSite, loading, navigate]);
+  }, [user, loading, navigate]);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
 
-  if (!hasEnteredSite) return null;
+  if (loading) {
+    return (
+      <>
+        <SmokeBackground />
+        <div className="relative z-10 min-h-screen flex items-center justify-center">
+          <div className="text-foreground/60 text-lg font-display animate-pulse">Loading...</div>
+        </div>
+      </>
+    );
+  }
+
+  if (!user) return null;
 
   const handleStartChat = () => {
     setAppState('mode-select');
@@ -89,9 +97,6 @@ const Index = () => {
       return <ConfessionsPanel />;
     }
     if (activeTab === 'friends') {
-      if (!user) {
-        return <AuthGate message="Sign up to add friends, send requests, and stay connected!" />;
-      }
       return <FriendsPanel />;
     }
     if (activeTab === 'theme') {
@@ -157,14 +162,14 @@ const Index = () => {
       
       {appState === 'home' && (
         <>
-          <UserHeader onSignInClick={() => setActiveTab('friends')} />
+          <UserHeader />
           <main className="relative z-10 pb-24 pt-14">
             {renderContent()}
           </main>
           <BottomNav 
             activeTab={activeTab} 
             onTabChange={handleTabChange} 
-            friendRequestCount={user ? incomingRequests.length : 0}
+            friendRequestCount={incomingRequests.length}
           />
         </>
       )}
