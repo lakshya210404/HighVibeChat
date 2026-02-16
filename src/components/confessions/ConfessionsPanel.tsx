@@ -107,6 +107,10 @@ const ConfessionsPanel = () => {
     }
     setSubmitting(false);
   };
+  const handleDelete = async (id: string) => {
+    await supabase.from("confessions").delete().eq("id", id);
+    toast.info("Confession deleted");
+  };
 
   const handleVote = async (confession: Confession, type: "up" | "down") => {
     const currentVote = confession.my_vote;
@@ -231,6 +235,8 @@ const ConfessionsPanel = () => {
                   key={confession.id}
                   confession={confession}
                   onVote={(type) => handleVote(confession, type)}
+                  onDelete={() => handleDelete(confession.id)}
+                  isOwner={confession.user_id === visitorId}
                   expanded={expandedId === confession.id}
                   onToggleComments={() => setExpandedId(expandedId === confession.id ? null : confession.id)}
                   visitorId={visitorId}
@@ -249,6 +255,8 @@ const ConfessionsPanel = () => {
 const ConfessionCard = ({
   confession,
   onVote,
+  onDelete,
+  isOwner,
   expanded,
   onToggleComments,
   visitorId,
@@ -256,6 +264,8 @@ const ConfessionCard = ({
 }: {
   confession: Confession;
   onVote: (type: "up" | "down") => void;
+  onDelete: () => void;
+  isOwner: boolean;
   expanded: boolean;
   onToggleComments: () => void;
   visitorId: string;
@@ -335,6 +345,15 @@ const ConfessionCard = ({
               <MessageCircle className="w-3.5 h-3.5" />
               {confession.comments_count > 0 ? confession.comments_count : ""} Comments
             </button>
+            {isOwner && (
+              <button
+                onClick={onDelete}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>
