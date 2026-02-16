@@ -96,7 +96,7 @@ const ConfessionsPanel = () => {
     setSubmitting(true);
     const { error } = await supabase
       .from("confessions")
-      .insert({ title: title.trim(), content: content.trim(), emoji: selectedEmoji });
+      .insert({ title: title.trim(), content: content.trim(), emoji: selectedEmoji, user_id: visitorId });
     if (error) {
       toast.error("Failed to post confession");
     } else {
