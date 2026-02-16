@@ -45,7 +45,7 @@ const Auth = () => {
 
   const handleEnter = () => {
     if (!selectedGender) {
-      toast.error("Pick your vibe first!");
+      toast.error("Pick your gender first!");
       return;
     }
     setGuestInfo({ name: username.trim(), gender: selectedGender });
@@ -207,7 +207,7 @@ const Auth = () => {
                 animate={{ scale: 1 }}
               />
               <h1 className="font-display text-2xl font-bold mb-2">
-                What's your <span className="text-gradient">vibe</span>, {username.trim()}?
+                What's your <span className="text-gradient">gender</span>, {username.trim()}?
               </h1>
               <p className="text-muted-foreground text-sm mb-8">
                 This helps us match you better
