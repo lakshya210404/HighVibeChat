@@ -209,7 +209,7 @@ const SettingsPanel = ({
                     }
                   </Button>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Match with stoners from specific countries only
+                    Match with vibers from specific countries only
                   </p>
                 </div>
               </div>

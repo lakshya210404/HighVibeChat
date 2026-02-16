@@ -23,7 +23,7 @@ const CommunitySection = () => {
             </div>
             
             <h2 className="font-display text-4xl md:text-5xl font-bold">
-              Full of <span className="text-primary italic">beautiful</span> stoners.
+              Full of <span className="text-primary italic">beautiful</span> vibers.
             </h2>
             
             <h3 className="font-display text-2xl md:text-3xl font-semibold text-foreground/80">
@@ -31,14 +31,14 @@ const CommunitySection = () => {
             </h3>
             
             <p className="text-muted-foreground text-lg leading-relaxed">
-              Our matching algorithm is designed to give you an amazing experience from the first toke... 
-              err, connection. It only gets better with time as we learn your vibes.
+              Our matching algorithm is designed to give you an amazing experience from the first 
+              connection. It only gets better with time as we learn your vibes.
             </p>
             
             <p className="text-muted-foreground text-lg leading-relaxed">
               Our goal is to keep things <span className="text-primary font-semibold">real</span> for our community. 
               No bots, just quality people vibing together. We work hard to make sure the best 
-              stoners stay, and more find us every day.
+              vibers stay, and more find us every day.
             </p>
             
             {/* Stats */}
@@ -49,7 +49,7 @@ const CommunitySection = () => {
               >
                 <Users className="w-6 h-6 text-primary mx-auto mb-2" />
                 <div className="font-display text-2xl font-bold text-primary">10k+</div>
-                <div className="text-xs text-muted-foreground">Active Stoners</div>
+                <div className="text-xs text-muted-foreground">Active Vibers</div>
               </motion.div>
               
               <motion.div 
