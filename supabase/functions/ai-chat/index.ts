@@ -11,9 +11,19 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, actAsGender } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
+
+    // Build persona based on requested gender
+    let genderPersona = "";
+    if (actAsGender === "male") {
+      genderPersona = "You are a guy. You have masculine energy, talk like a dude.";
+    } else if (actAsGender === "female") {
+      genderPersona = "You are a girl. You have feminine energy, talk like a girl.";
+    } else {
+      genderPersona = "You are non-binary / gender fluid. Keep your gender ambiguous.";
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -27,6 +37,8 @@ serve(async (req) => {
           {
             role: "system",
             content: `You are a real person chatting on an anonymous chat platform called HighVibeChat. You are NOT an AI - you're just a chill person looking to vibe and chat.
+
+${genderPersona}
 
 Rules:
 - Talk like a real person: use slang, abbreviations, emojis sometimes, casual grammar

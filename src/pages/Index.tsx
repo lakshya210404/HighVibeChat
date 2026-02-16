@@ -29,15 +29,15 @@ type AppState = 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, subscribed, currentTier, gender: userGender } = useAuth();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [interests, setInterests] = useState<string[]>([]);
-  const [gender, setGender] = useState<Gender>('other');
+  const [gender, setGender] = useState<Gender>((userGender as Gender) || 'other');
   const [lookingFor, setLookingFor] = useState<LookingFor>('everyone');
-  const [isPremium, setIsPremium] = useState(false);
+  const isPremium = subscribed;
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
@@ -46,12 +46,19 @@ const Index = () => {
   const { friends, incomingRequests } = useFriends();
   useFriendNotifications(friends, incomingRequests);
 
-  // Redirect to auth if not logged in
+  // Redirect to auth if not logged in, or gender select if no gender set
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
+    } else if (!loading && user && !userGender) {
+      navigate("/gender");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, userGender]);
+
+  // Sync gender from profile
+  useEffect(() => {
+    if (userGender) setGender(userGender as Gender);
+  }, [userGender]);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
