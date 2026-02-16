@@ -18,6 +18,7 @@ import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
+import PremiumPopup from "@/components/landing/PremiumPopup";
 import AuthGate from "@/components/auth/AuthGate";
 import UserHeader from "@/components/landing/UserHeader";
 import { usePresence } from "@/hooks/usePresence";
@@ -174,16 +175,17 @@ const Index = () => {
       
       {appState === 'home' && (
         <>
-          <UserHeader />
-          <main className="relative z-10 pb-24 pt-14">
-            {renderContent()}
-          </main>
-          <BottomNav 
-            activeTab={activeTab} 
-            onTabChange={handleTabChange} 
-            friendRequestCount={incomingRequests.length}
-          />
-        </>
+           <UserHeader />
+           <main className="relative z-10 pb-24 pt-14">
+             {renderContent()}
+           </main>
+           <BottomNav 
+             activeTab={activeTab} 
+             onTabChange={handleTabChange} 
+             friendRequestCount={incomingRequests.length}
+           />
+           <PremiumPopup onGoElevate={() => setActiveTab('elevate')} />
+         </>
       )}
     </>
   );
