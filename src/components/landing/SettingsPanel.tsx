@@ -249,7 +249,7 @@ const SettingsPanel = ({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
                   <User className="w-4 h-4 text-destructive" />
-                  <span>Your Vibe</span>
+                  <span>Your Gender</span>
                 </div>
                 <div className="p-4 rounded-xl glass border border-border/50">
                   <RadioGroup value={gender} onValueChange={(v) => {
