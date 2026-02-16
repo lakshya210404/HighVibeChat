@@ -5,7 +5,7 @@ interface AiMessage {
   content: string;
 }
 
-export const useAiChat = () => {
+export const useAiChat = (actAsGender?: string) => {
   const [isAiMode, setIsAiMode] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const conversationHistory = useRef<AiMessage[]>([]);
@@ -32,7 +32,7 @@ export const useAiChat = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ messages: conversationHistory.current }),
+          body: JSON.stringify({ messages: conversationHistory.current, actAsGender: actAsGender || "other" }),
         }
       );
 

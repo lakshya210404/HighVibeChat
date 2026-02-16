@@ -52,7 +52,7 @@ const Auth = () => {
         toast.error(error.message);
       } else {
         toast.success("Welcome to HighVibeChat! 🌿");
-        navigate("/");
+        navigate("/gender");
       }
     } else {
       const { error } = await signIn(username.trim(), password);

@@ -33,6 +33,7 @@ interface AuthContextType {
   currentTier: TierKey | null;
   subscriptionEnd: string | null;
   displayName: string | null;
+  gender: string | null;
   signUp: (username: string, password: string) => Promise<{ error: any }>;
   signIn: (username: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -53,14 +54,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentTier, setCurrentTier] = useState<TierKey | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [gender, setGender] = useState<string | null>(null);
 
-  const fetchDisplayName = async (userId: string) => {
+  const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("display_name")
+      .select("display_name, gender")
       .eq("id", userId)
       .maybeSingle();
     setDisplayName(data?.display_name || null);
+    setGender(data?.gender || null);
   };
 
   const checkSubscription = async () => {
@@ -96,13 +99,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (session?.user) {
         setTimeout(() => {
           checkSubscription();
-          fetchDisplayName(session.user.id);
+          fetchProfile(session.user.id);
         }, 0);
       } else {
         setSubscribed(false);
         setCurrentTier(null);
         setSubscriptionEnd(null);
         setDisplayName(null);
+        setGender(null);
       }
     });
 
@@ -112,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
       if (session?.user) {
         checkSubscription();
-        fetchDisplayName(session.user.id);
+        fetchProfile(session.user.id);
       }
     });
 
@@ -181,7 +185,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{
-      user, session, loading, subscribed, currentTier, subscriptionEnd, displayName,
+      user, session, loading, subscribed, currentTier, subscriptionEnd, displayName, gender,
       signUp, signIn, signOut, updateDisplayName, checkSubscription,
     }}>
       {children}
