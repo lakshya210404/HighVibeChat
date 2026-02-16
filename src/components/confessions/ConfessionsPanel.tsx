@@ -16,7 +16,6 @@ interface Confession {
   likes_count: number;
   created_at: string;
   liked_by_me: boolean;
-  display_name: string | null;
 }
 
 const EMOJI_OPTIONS = ["🔥", "💀", "😭", "🤣", "💚", "🫣", "👀", "🥴"];
@@ -31,7 +30,6 @@ const ConfessionsPanel = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchConfessions = useCallback(async () => {
-
     const { data, error } = await supabase
       .from("confessions")
       .select("*")
@@ -40,18 +38,7 @@ const ConfessionsPanel = () => {
 
     if (error) { console.error(error); return; }
 
-    // Fetch display names for all user_ids
-    const userIds = [...new Set((data || []).map(c => c.user_id).filter(Boolean))] as string[];
-    let profileMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", userIds);
-      profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.display_name || "Anonymous"]));
-    }
-
-    // Check which ones user has liked
+    // Check which ones user has liked (only if logged in)
     let likedIds = new Set<string>();
     if (user) {
       const { data: myLikes } = await supabase
@@ -65,7 +52,6 @@ const ConfessionsPanel = () => {
       (data || []).map(c => ({
         ...c,
         liked_by_me: likedIds.has(c.id),
-        display_name: c.user_id ? (profileMap[c.user_id] || "Anonymous") : "Anonymous",
       }))
     );
     setLoading(false);
@@ -88,12 +74,12 @@ const ConfessionsPanel = () => {
   }, [fetchConfessions]);
 
   const handleSubmit = async () => {
-    if (!user || !content.trim() || !title.trim()) return;
+    if (!content.trim() || !title.trim()) return;
     setSubmitting(true);
 
     const { error } = await supabase
       .from("confessions")
-      .insert({ user_id: user.id, title: title.trim(), content: content.trim(), emoji: selectedEmoji });
+      .insert({ title: title.trim(), content: content.trim(), emoji: selectedEmoji });
 
     if (error) {
       toast.error("Failed to post confession");
@@ -108,7 +94,10 @@ const ConfessionsPanel = () => {
   };
 
   const toggleLike = async (confession: Confession) => {
-    if (!user) return;
+    if (!user) {
+      toast.info("Sign in to like confessions");
+      return;
+    }
 
     if (confession.liked_by_me) {
       await supabase
@@ -153,61 +142,55 @@ const ConfessionsPanel = () => {
           Share your wildest chat stories. 100% anonymous. No judgement. 🤫
         </p>
 
-        {/* Post form - only for logged in users */}
-        {user ? (
-          <div className="p-4 rounded-xl bg-card/70 border border-border mb-6">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Give it a catchy title... 🎯"
-              className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
-              maxLength={100}
-            />
-            <div className="h-px bg-border/50 mb-2" />
-            <textarea
-              value={content}
-              onChange={(e) => {
-                const words = e.target.value.split(/\s+/).filter(Boolean);
-                if (words.length <= 1000 || e.target.value.length < content.length) {
-                  setContent(e.target.value);
-                }
-              }}
-              placeholder="Spill the tea... what happened in your chat? 👀"
-              className="w-full bg-transparent border-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
-            />
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex gap-1.5">
-                {EMOJI_OPTIONS.map((e) => (
-                  <button
-                    key={e}
-                    onClick={() => setSelectedEmoji(e)}
-                    className={`text-lg w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                      selectedEmoji === e ? "bg-primary/20 scale-110" : "hover:bg-muted/50"
-                    }`}
-                  >
-                    {e}
-                  </button>
-                ))}
-              </div>
-              <Button
-                size="sm"
-                onClick={handleSubmit}
-                disabled={!title.trim() || !content.trim() || submitting}
-                className="rounded-xl gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                Confess
-              </Button>
+        {/* Post form - open to everyone */}
+        <div className="p-4 rounded-xl bg-card/70 border border-border mb-6">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give it a catchy title... 🎯"
+            className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
+            maxLength={100}
+          />
+          <div className="h-px bg-border/50 mb-2" />
+          <textarea
+            value={content}
+            onChange={(e) => {
+              const words = e.target.value.split(/\s+/).filter(Boolean);
+              if (words.length <= 1000 || e.target.value.length < content.length) {
+                setContent(e.target.value);
+              }
+            }}
+            placeholder="Spill the tea... what happened in your chat? 👀"
+            className="w-full bg-transparent border-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
+          />
+          <div className="flex items-center justify-between mt-3">
+            <div className="flex gap-1.5">
+              {EMOJI_OPTIONS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => setSelectedEmoji(e)}
+                  className={`text-lg w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                    selectedEmoji === e ? "bg-primary/20 scale-110" : "hover:bg-muted/50"
+                  }`}
+                >
+                  {e}
+                </button>
+              ))}
             </div>
-            <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
-              {title.length}/100 · {content.split(/\s+/).filter(Boolean).length}/1000 words
-            </p>
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={!title.trim() || !content.trim() || submitting}
+              className="rounded-xl gap-1.5"
+            >
+              <Send className="w-3.5 h-3.5" />
+              Confess
+            </Button>
           </div>
-        ) : (
-          <div className="p-4 rounded-xl bg-card/70 border border-border mb-6 text-center">
-            <p className="text-sm text-muted-foreground">Sign up to post your own confessions 🤫</p>
-          </div>
-        )}
+          <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
+            {title.length}/100 · {content.split(/\s+/).filter(Boolean).length}/1000 words
+          </p>
+        </div>
 
         {/* Feed */}
         <div className="space-y-3">
@@ -225,7 +208,7 @@ const ConfessionsPanel = () => {
                 <ConfessionCard
                   key={confession.id}
                   confession={confession}
-                  isOwner={confession.user_id === user?.id}
+                  isOwner={!!user && confession.user_id === user.id}
                   onLike={() => toggleLike(confession)}
                   onDelete={() => handleDelete(confession.id)}
                 />
@@ -261,7 +244,6 @@ const ConfessionCard = ({
         {confession.title && (
           <h3 className="font-display font-bold text-sm text-foreground mb-1">{confession.title}</h3>
         )}
-        <p className="text-xs text-primary/70 font-medium mb-1">@{confession.display_name || "Anonymous"}</p>
         <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
           {confession.content}
         </p>
