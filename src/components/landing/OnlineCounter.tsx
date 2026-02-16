@@ -10,19 +10,24 @@ const OnlineCounter = ({ baseCount }: OnlineCounterProps) => {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
-    // Simulate realistic fluctuation
+    // Start with a random count in the 3000-20000 range
+    setDisplayCount(Math.floor(Math.random() * 17000) + 3000);
+  }, []);
+
+  useEffect(() => {
+    // Simulate realistic fluctuation with small steps
     const interval = setInterval(() => {
-      const fluctuation = Math.floor(Math.random() * 50) - 20; // -20 to +30
+      const fluctuation = Math.floor(Math.random() * 300) - 120; // -120 to +180
       setDisplayCount(prev => {
         const newCount = prev + fluctuation;
-        return Math.max(baseCount - 100, Math.min(baseCount + 500, newCount));
+        return Math.max(3000, Math.min(20000, newCount));
       });
       setIsAnimating(true);
       setTimeout(() => setIsAnimating(false), 300);
     }, 3000 + Math.random() * 2000);
 
     return () => clearInterval(interval);
-  }, [baseCount]);
+  }, []);
 
   const formatNumber = (num: number) => {
     return num.toLocaleString();
