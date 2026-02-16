@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquareHeart, ThumbsUp, ThumbsDown, MessageCircle, Send, Trash2, Globe, User } from "lucide-react";
+import { MessageSquareHeart, ThumbsUp, ThumbsDown, MessageCircle, Send, Trash2, Globe, User, Reply, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,6 +27,9 @@ interface Comment {
   display_name: string;
   content: string;
   created_at: string;
+  parent_id: string | null;
+  likes_count: number;
+  liked_by_me: boolean;
 }
 
 const EMOJI_OPTIONS = ["🔥", "💀", "😭", "🤣", "💚", "🫣", "👀", "🥴"];
@@ -419,6 +422,7 @@ const CommentsSection = ({
   const [loadingComments, setLoadingComments] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [posting, setPosting] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<{ id: string; name: string } | null>(null);
 
   const fetchComments = useCallback(async () => {
     const { data, error } = await supabase
@@ -427,9 +431,26 @@ const CommentsSection = ({
       .eq("confession_id", confessionId)
       .order("created_at", { ascending: true });
 
-    if (!error) setComments(data || []);
+    if (error) { setLoadingComments(false); return; }
+
+    // Fetch user's comment likes
+    const commentIds = (data || []).map(c => c.id);
+    let likedSet = new Set<string>();
+    if (commentIds.length > 0) {
+      const { data: myLikes } = await supabase
+        .from("confession_comment_likes")
+        .select("comment_id")
+        .eq("user_id", visitorId)
+        .in("comment_id", commentIds);
+      likedSet = new Set((myLikes || []).map(l => l.comment_id));
+    }
+
+    setComments((data || []).map(c => ({
+      ...c,
+      liked_by_me: likedSet.has(c.id),
+    })));
     setLoadingComments(false);
-  }, [confessionId]);
+  }, [confessionId, visitorId]);
 
   useEffect(() => { fetchComments(); }, [fetchComments]);
 
@@ -454,49 +475,119 @@ const CommentsSection = ({
       user_id: visitorId,
       display_name: visitorName,
       content: newComment.trim(),
+      parent_id: replyingTo?.id || null,
     });
     if (error) {
       toast.error("Failed to post comment");
     } else {
       setNewComment("");
+      setReplyingTo(null);
+      await fetchComments();
     }
     setPosting(false);
   };
 
   const handleDelete = async (id: string) => {
     await supabase.from("confession_comments").delete().eq("id", id);
+    await fetchComments();
   };
+
+  const toggleCommentLike = async (comment: Comment) => {
+    // Optimistic update
+    setComments(prev => prev.map(c =>
+      c.id === comment.id
+        ? { ...c, liked_by_me: !c.liked_by_me, likes_count: c.likes_count + (c.liked_by_me ? -1 : 1) }
+        : c
+    ));
+
+    if (comment.liked_by_me) {
+      await supabase.from("confession_comment_likes").delete()
+        .eq("comment_id", comment.id).eq("user_id", visitorId);
+    } else {
+      await supabase.from("confession_comment_likes").insert({
+        comment_id: comment.id, user_id: visitorId,
+      });
+    }
+  };
+
+  // Separate top-level and replies
+  const topLevel = comments.filter(c => !c.parent_id);
+  const replies = comments.filter(c => c.parent_id);
+  const repliesMap: Record<string, Comment[]> = {};
+  replies.forEach(r => {
+    if (r.parent_id) {
+      if (!repliesMap[r.parent_id]) repliesMap[r.parent_id] = [];
+      repliesMap[r.parent_id].push(r);
+    }
+  });
+
+  const renderComment = (c: Comment, isReply = false) => (
+    <div key={c.id} className={`flex gap-2 group ${isReply ? "ml-6 pl-3 border-l border-border/30" : ""}`}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-primary/80">{c.display_name}</span>
+          <span className="text-[10px] text-muted-foreground/50">
+            {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+          </span>
+          {c.user_id === visitorId && (
+            <button
+              onClick={() => handleDelete(c.id)}
+              className="opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-destructive transition-all"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground leading-relaxed">{c.content}</p>
+        <div className="flex items-center gap-2 mt-1">
+          <button
+            onClick={() => toggleCommentLike(c)}
+            className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded transition-all ${
+              c.liked_by_me
+                ? "text-red-400"
+                : "text-muted-foreground/50 hover:text-red-400"
+            }`}
+          >
+            <Heart className={`w-3 h-3 ${c.liked_by_me ? "fill-current" : ""}`} />
+            {c.likes_count > 0 && c.likes_count}
+          </button>
+          {!isReply && (
+            <button
+              onClick={() => setReplyingTo({ id: c.id, name: c.display_name })}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground/50 hover:text-primary transition-all px-1.5 py-0.5 rounded"
+            >
+              <Reply className="w-3 h-3" />
+              Reply
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="border-t border-border/50 bg-muted/20 px-4 py-3">
-      {/* Comment list */}
       {loadingComments ? (
         <p className="text-xs text-muted-foreground py-2">Loading comments...</p>
       ) : comments.length === 0 ? (
         <p className="text-xs text-muted-foreground/60 py-2">No comments yet — be the first!</p>
       ) : (
         <div className="space-y-2.5 mb-3">
-          {comments.map((c) => (
-            <div key={c.id} className="flex gap-2 group">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-primary/80">{c.display_name}</span>
-                  <span className="text-[10px] text-muted-foreground/50">
-                    {formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                  </span>
-                  {c.user_id === visitorId && (
-                    <button
-                      onClick={() => handleDelete(c.id)}
-                      className="opacity-0 group-hover:opacity-100 text-muted-foreground/40 hover:text-destructive transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{c.content}</p>
-              </div>
+          {topLevel.map((c) => (
+            <div key={c.id}>
+              {renderComment(c)}
+              {repliesMap[c.id]?.map(r => renderComment(r, true))}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Reply indicator */}
+      {replyingTo && (
+        <div className="flex items-center gap-2 mb-1.5 text-[11px] text-primary/70">
+          <Reply className="w-3 h-3" />
+          Replying to {replyingTo.name}
+          <button onClick={() => setReplyingTo(null)} className="text-muted-foreground hover:text-destructive ml-1">✕</button>
         </div>
       )}
 
@@ -506,7 +597,7 @@ const CommentsSection = ({
           value={newComment}
           onChange={(e) => setNewComment(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handlePost()}
-          placeholder="Add a comment..."
+          placeholder={replyingTo ? `Reply to ${replyingTo.name}...` : "Add a comment..."}
           className="flex-1 bg-card/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/30"
           maxLength={500}
         />
