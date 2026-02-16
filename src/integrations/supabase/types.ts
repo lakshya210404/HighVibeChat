@@ -50,6 +50,7 @@ export type Database = {
           emoji: string | null
           id: string
           likes_count: number
+          title: string | null
           user_id: string | null
         }
         Insert: {
@@ -58,6 +59,7 @@ export type Database = {
           emoji?: string | null
           id?: string
           likes_count?: number
+          title?: string | null
           user_id?: string | null
         }
         Update: {
@@ -66,6 +68,7 @@ export type Database = {
           emoji?: string | null
           id?: string
           likes_count?: number
+          title?: string | null
           user_id?: string | null
         }
         Relationships: []

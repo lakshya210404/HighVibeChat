@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 interface Confession {
   id: string;
   user_id: string | null;
+  title: string | null;
   content: string;
   emoji: string;
   likes_count: number;
@@ -23,6 +24,7 @@ const ConfessionsPanel = () => {
   const { user } = useAuth();
   const [confessions, setConfessions] = useState<Confession[]>([]);
   const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState("🔥");
   const [submitting, setSubmitting] = useState(false);
@@ -72,18 +74,19 @@ const ConfessionsPanel = () => {
   }, [fetchConfessions]);
 
   const handleSubmit = async () => {
-    if (!user || !content.trim()) return;
+    if (!user || !content.trim() || !title.trim()) return;
     setSubmitting(true);
 
     const { error } = await supabase
       .from("confessions")
-      .insert({ user_id: user.id, content: content.trim(), emoji: selectedEmoji });
+      .insert({ user_id: user.id, title: title.trim(), content: content.trim(), emoji: selectedEmoji });
 
     if (error) {
       toast.error("Failed to post confession");
       console.error(error);
     } else {
       toast.success("Confession posted anonymously 🤫");
+      setTitle("");
       setContent("");
       setSelectedEmoji("🔥");
     }
@@ -138,6 +141,14 @@ const ConfessionsPanel = () => {
 
         {/* Post form */}
         <div className="p-4 rounded-xl bg-card/70 border border-border mb-6">
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Give it a catchy title... 🎯"
+            className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
+            maxLength={100}
+          />
+          <div className="h-px bg-border/50 mb-2" />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -162,7 +173,7 @@ const ConfessionsPanel = () => {
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!content.trim() || submitting}
+              disabled={!title.trim() || !content.trim() || submitting}
               className="rounded-xl gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
@@ -170,7 +181,7 @@ const ConfessionsPanel = () => {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
-            {content.length}/500
+            {title.length}/100 · {content.length}/500
           </p>
         </div>
 
@@ -223,7 +234,10 @@ const ConfessionCard = ({
     <div className="flex gap-3">
       <span className="text-2xl mt-0.5">{confession.emoji}</span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap break-words">
+        {confession.title && (
+          <h3 className="font-display font-bold text-sm text-foreground mb-1">{confession.title}</h3>
+        )}
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
           {confession.content}
         </p>
         <div className="flex items-center justify-between mt-3">
