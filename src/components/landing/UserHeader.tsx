@@ -1,96 +1,82 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Pencil, Check, X, LogOut, LogIn } from "lucide-react";
+import { Check, X, LogOut, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import AuthGate from "@/components/auth/AuthGate";
+import { supabase } from "@/integrations/supabase/client";
+
+const genderOptions = [
+  { value: "male", emoji: "♂️", label: "Male" },
+  { value: "female", emoji: "♀️", label: "Female" },
+  { value: "other", emoji: "⚧️", label: "Other" },
+];
 
 const UserHeader = () => {
-  const { displayName, gender, user, isGuest, updateDisplayName, signOut } = useAuth();
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(displayName || "");
+  const { displayName, gender, user, isGuest, updateDisplayName, signOut, guestInfo, setGuestInfo } = useAuth();
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [editName, setEditName] = useState(displayName || "");
+  const [editGender, setEditGender] = useState(gender || "other");
   const [showAuthDialog, setShowAuthDialog] = useState(false);
-  const navigate = useNavigate();
 
   const name = displayName || "User";
   const genderEmoji = gender === "male" ? "♂️" : gender === "female" ? "♀️" : "⚧️";
 
-  const handleSave = async () => {
-    if (!editValue.trim()) return;
-    await updateDisplayName(editValue.trim());
-    setIsEditing(false);
-    toast.success("Name updated! ✨");
+  const handleOpenProfile = () => {
+    setEditName(displayName || "");
+    setEditGender(gender || "other");
+    setShowProfileEdit(true);
   };
 
-  const handleCancel = () => {
-    setEditValue(displayName || "");
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    const trimmedName = editName.trim();
+    if (!trimmedName || trimmedName.length < 2) {
+      toast.error("Name must be at least 2 characters");
+      return;
+    }
+
+    // Update name
+    await updateDisplayName(trimmedName);
+
+    // Update gender
+    if (user) {
+      await supabase.from("profiles").update({ gender: editGender }).eq("id", user.id);
+    } else if (guestInfo) {
+      setGuestInfo({ ...guestInfo, name: trimmedName, gender: editGender });
+    }
+
+    setShowProfileEdit(false);
+    toast.success("Profile updated! ✨");
+    // Force reload gender in context — simplest via page state
+    window.location.reload();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleSave();
-    if (e.key === "Escape") handleCancel();
+    if (e.key === "Enter") handleSaveProfile();
+    if (e.key === "Escape") setShowProfileEdit(false);
   };
 
   return (
     <div className="fixed top-0 left-0 right-0 z-40 glass-heavy border-b border-border/30">
       <div className="flex items-center justify-between px-4 py-2.5 max-w-lg mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 flex items-center justify-center text-xs font-bold text-primary">
+          {/* Avatar - clickable to edit profile */}
+          <button
+            onClick={handleOpenProfile}
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 flex items-center justify-center text-xs font-bold text-primary hover:ring-2 hover:ring-primary/40 transition-all"
+          >
             {name.charAt(0).toUpperCase()}
-          </div>
+          </button>
 
-          <AnimatePresence mode="wait">
-            {isEditing ? (
-              <motion.div
-                key="editing"
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="flex items-center gap-1"
-              >
-                <Input
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  className="h-7 w-32 text-sm bg-muted/50 border-border/50 rounded-lg px-2"
-                  maxLength={30}
-                  autoFocus
-                />
-                <button
-                  onClick={handleSave}
-                  className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="w-6 h-6 rounded-full bg-muted text-muted-foreground flex items-center justify-center hover:bg-muted/80 transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </motion.div>
-            ) : (
-              <motion.button
-                key="display"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => {
-                  setEditValue(displayName || "");
-                  setIsEditing(true);
-                }}
-                className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group"
-              >
-                <span>{name}</span>
-                <span className="text-xs">{genderEmoji}</span>
-                <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          <button
+            onClick={handleOpenProfile}
+            className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+          >
+            <span>{name}</span>
+            <span className="text-xs">{genderEmoji}</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-2">
@@ -105,9 +91,9 @@ const UserHeader = () => {
                 </button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md p-0 border-border/50 bg-background">
-                <AuthGate 
-                  message="Sign in or create an account to save your progress 🌿" 
-                  onSuccess={() => setShowAuthDialog(false)} 
+                <AuthGate
+                  message="Sign in or create an account to save your progress 🌿"
+                  onSuccess={() => setShowAuthDialog(false)}
                 />
               </DialogContent>
             </Dialog>
@@ -123,6 +109,71 @@ const UserHeader = () => {
           )}
         </div>
       </div>
+
+      {/* Profile edit dropdown */}
+      <AnimatePresence>
+        {showProfileEdit && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="border-t border-border/20 overflow-hidden"
+          >
+            <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
+              <div>
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Display Name</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="h-9 text-sm bg-muted/50 border-border/50 rounded-lg"
+                  maxLength={30}
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="text-xs text-muted-foreground font-medium mb-1.5 block">Gender</label>
+                <div className="flex gap-2">
+                  {genderOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setEditGender(opt.value)}
+                      className={`
+                        flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-sm
+                        ${editGender === opt.value
+                          ? "border-primary bg-primary/10 text-primary font-semibold"
+                          : "border-border/50 bg-card/50 text-muted-foreground hover:border-border"
+                        }
+                      `}
+                    >
+                      <span>{opt.emoji}</span>
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveProfile}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                >
+                  <Check className="w-4 h-4" />
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowProfileEdit(false)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-muted text-muted-foreground text-sm hover:bg-muted/80 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
