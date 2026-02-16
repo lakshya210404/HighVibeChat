@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import AuthGate from "@/components/auth/AuthGate";
-import { supabase } from "@/integrations/supabase/client";
+
 
 const genderOptions = [
   { value: "male", emoji: "♂️", label: "Male" },
@@ -15,7 +15,7 @@ const genderOptions = [
 ];
 
 const UserHeader = () => {
-  const { displayName, gender, user, isGuest, updateDisplayName, signOut, guestInfo, setGuestInfo } = useAuth();
+  const { displayName, gender, user, isGuest, updateDisplayName, updateGender, signOut, guestInfo, setGuestInfo } = useAuth();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [editName, setEditName] = useState(displayName || "");
   const [editGender, setEditGender] = useState(gender || "other");
@@ -41,16 +41,10 @@ const UserHeader = () => {
     await updateDisplayName(trimmedName);
 
     // Update gender
-    if (user) {
-      await supabase.from("profiles").update({ gender: editGender }).eq("id", user.id);
-    } else if (guestInfo) {
-      setGuestInfo({ ...guestInfo, name: trimmedName, gender: editGender });
-    }
+    await updateGender(editGender);
 
     setShowProfileEdit(false);
     toast.success("Profile updated! ✨");
-    // Force reload gender in context — simplest via page state
-    window.location.reload();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

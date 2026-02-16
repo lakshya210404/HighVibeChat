@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -250,7 +251,9 @@ const SettingsPanel = ({
                   <span>Your Vibe</span>
                 </div>
                 <div className="p-4 rounded-xl glass border border-border/50">
-                  <RadioGroup value={gender} onValueChange={(v) => onGenderChange(v as Gender)} className="flex gap-6">
+                  <RadioGroup value={gender} onValueChange={(v) => {
+                    onGenderChange(v as Gender);
+                  }} className="flex gap-6">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="male" id="male" className="border-accent data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground" />
                       <Label htmlFor="male">Male</Label>

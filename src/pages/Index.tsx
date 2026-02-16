@@ -30,7 +30,7 @@ type AppState = 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
-  const { user, loading, subscribed, gender: userGender, guestInfo, isGuest } = useAuth();
+  const { user, loading, subscribed, gender: userGender, guestInfo, isGuest, updateGender } = useAuth();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
@@ -122,7 +122,7 @@ const Index = () => {
         <SettingsPanel 
           gender={gender}
           lookingFor={lookingFor}
-          onGenderChange={setGender}
+          onGenderChange={(g) => { setGender(g); updateGender(g); }}
           onLookingForChange={setLookingFor}
           isPremium={isPremium}
           selectedCountries={selectedCountries}

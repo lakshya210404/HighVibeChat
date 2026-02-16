@@ -49,6 +49,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
   updateDisplayName: (name: string) => Promise<void>;
+  updateGender: (gender: string) => Promise<void>;
   checkSubscription: () => Promise<void>;
 }
 
@@ -223,6 +224,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const updateGender = async (newGender: string) => {
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ gender: newGender })
+        .eq("id", user.id);
+      setGender(newGender);
+    } else if (guestInfo) {
+      setGuestInfo({ ...guestInfo, gender: newGender });
+    }
+  };
+
   const effectiveDisplayName = user ? displayName : guestInfo?.name || null;
   const effectiveGender = user ? gender : guestInfo?.gender || null;
 
@@ -232,7 +245,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       displayName: effectiveDisplayName,
       gender: effectiveGender,
       guestInfo, isGuest, setGuestInfo, clearGuest,
-      signUp, signIn, signOut, resetPassword, updatePassword, updateDisplayName, checkSubscription,
+      signUp, signIn, signOut, resetPassword, updatePassword, updateDisplayName, updateGender, checkSubscription,
     }}>
       {children}
     </AuthContext.Provider>
