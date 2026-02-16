@@ -1,81 +1,34 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
-import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SmokeBackground from "@/components/ui/SmokeBackground";
-
-type AuthView = "login" | "signup" | "forgot";
+import { useGuest } from "@/contexts/GuestContext";
 
 const Auth = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [view, setView] = useState<AuthView>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const { user, loading: authLoading, signUp, signIn, resetPassword } = useAuth();
+  const [username, setUsername] = useState("");
+  const { setGuestName, hasEnteredSite } = useGuest();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (hasEnteredSite) {
       navigate("/");
     }
-  }, [user, authLoading, navigate]);
+  }, [hasEnteredSite, navigate]);
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2800);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEnter = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    if (view === "forgot") {
-      const { error } = await resetPassword(email);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Check your email for a reset link! 📧");
-        setView("login");
-      }
-      setLoading(false);
-      return;
-    }
-
-    if (view === "signup") {
-      if (!displayName.trim()) {
-        toast.error("Please choose a display name!");
-        setLoading(false);
-        return;
-      }
-      const { error } = await signUp(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        // Save display name to profile after signup
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", newUser.id);
-        }
-        toast.success("Check your email to confirm your account! 🌿");
-      }
-    } else {
-      const { error } = await signIn(email, password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Welcome back! 🔥");
-        navigate("/");
-      }
-    }
-    setLoading(false);
+    if (!username.trim()) return;
+    setGuestName(username.trim());
+    navigate("/");
   };
 
   return (
@@ -91,7 +44,6 @@ const Auth = () => {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.6, ease: "easeInOut" }}
           >
-            {/* Glow rings */}
             <motion.div
               className="absolute w-72 h-72 rounded-full border border-primary/20"
               initial={{ scale: 0, opacity: 0 }}
@@ -157,7 +109,7 @@ const Auth = () => {
           </motion.div>
         ) : (
           <motion.div
-            key="auth"
+            key="username"
             className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -177,119 +129,37 @@ const Auth = () => {
                   <span className="text-gradient">HighVibe</span>Chat
                 </h1>
                 <p className="text-muted-foreground text-sm mt-2">
-                  {view === "forgot"
-                    ? "Enter your email to receive a reset link"
-                    : view === "signup"
-                      ? "Create your account"
-                      : "Sign in to your account"}
+                  Choose a name to get started
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {view === "signup" && (
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type="text"
-                      placeholder="Choose a display name"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="pl-10 glass border-border/50"
-                      required
-                      maxLength={30}
-                    />
-                  </div>
-                )}
+              <form onSubmit={handleEnter} className="space-y-4">
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="Your display name"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 glass border-border/50"
                     required
+                    maxLength={30}
+                    autoFocus
                   />
                 </div>
-                {view !== "forgot" && (
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-10 glass border-border/50"
-                      required
-                      minLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                )}
-
-                {view === "login" && (
-                  <div className="text-right">
-                    <button
-                      type="button"
-                      onClick={() => setView("forgot")}
-                      className="text-sm text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                )}
 
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={!username.trim()}
                   className="w-full h-12 font-display font-semibold text-lg rounded-xl"
                   style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))' }}
                 >
-                  {loading
-                    ? "Loading..."
-                    : view === "forgot"
-                      ? "Send Reset Link"
-                      : view === "signup"
-                        ? "Sign Up"
-                        : "Sign In"}
+                  Enter HighVibeChat
                 </Button>
               </form>
 
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                {view === "forgot" ? (
-                  <button
-                    onClick={() => setView("login")}
-                    className="text-primary hover:underline font-medium"
-                  >
-                    Back to Sign In
-                  </button>
-                ) : view === "signup" ? (
-                  <>
-                    Already have an account?{" "}
-                    <button
-                      onClick={() => setView("login")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Sign In
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Don't have an account?{" "}
-                    <button
-                      onClick={() => setView("signup")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Sign Up
-                    </button>
-                  </>
-                )}
+              <p className="text-center text-xs text-muted-foreground mt-6">
+                No account needed • Just pick a name and vibe
               </p>
             </div>
           </motion.div>
