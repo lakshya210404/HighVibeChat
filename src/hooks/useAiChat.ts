@@ -9,21 +9,32 @@ export const useAiChat = (actAsGender?: string) => {
   const [isAiMode, setIsAiMode] = useState(false);
   const [isAiTyping, setIsAiTyping] = useState(false);
   const conversationHistory = useRef<AiMessage[]>([]);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const pendingMessages = useRef<string[]>([]);
+  const isProcessing = useRef(false);
 
-  const sendAiMessage = useCallback(async (
-    userMessage: string,
+  const processResponse = useCallback(async (
     onResponse: (content: string) => void
   ) => {
-    conversationHistory.current.push({ role: "user", content: userMessage });
+    if (isProcessing.current) return;
+    isProcessing.current = true;
 
-    // Delay before showing typing indicator (2-3 seconds) to feel natural
-    const preTypingDelay = 2000 + Math.random() * 1000;
+    // Merge any pending messages into one user turn if they double-texted
+    const merged = pendingMessages.current.join("\n");
+    pendingMessages.current = [];
+
+    conversationHistory.current.push({ role: "user", content: merged });
+
+    // Human-like "seen" delay before typing indicator (2-4 seconds)
+    // Longer messages get read longer
+    const readTime = Math.min(2000 + merged.length * 30, 5000);
+    const preTypingDelay = readTime + Math.random() * 1000;
     await new Promise(resolve => setTimeout(resolve, preTypingDelay));
 
     setIsAiTyping(true);
 
-    // Additional short "seen" delay (0.5-1s) after typing starts
-    const seenDelay = 500 + Math.random() * 500;
+    // Short pause after typing indicator starts (0.5-1.5s)
+    const seenDelay = 500 + Math.random() * 1000;
     await new Promise(resolve => setTimeout(resolve, seenDelay));
 
     let responseText = "";
@@ -89,32 +100,56 @@ export const useAiChat = (actAsGender?: string) => {
       responseText = fallbacks[Math.floor(Math.random() * fallbacks.length)];
     }
 
-    // Simulate realistic human typing time based on message length
-    // Average person types ~40 words per minute on mobile = ~3.3 chars/sec
-    // Add some randomness to feel natural
-    const charsPerSecond = 2.5 + Math.random() * 2; // 2.5-4.5 chars/sec
+    // Simulate typing time proportional to response length
+    const charsPerSecond = 2.5 + Math.random() * 2;
     const typingTimeMs = Math.min(
       (responseText.length / charsPerSecond) * 1000,
-      12000 // cap at 12 seconds so it doesn't feel too slow
+      12000
     );
-    // Subtract time already spent waiting for the API response, minimum 500ms
     const remainingDelay = Math.max(typingTimeMs, 500);
     await new Promise(resolve => setTimeout(resolve, remainingDelay));
 
-    // Now show the message
     conversationHistory.current.push({ role: "assistant", content: responseText });
     onResponse(responseText);
     setIsAiTyping(false);
-  }, []);
+    isProcessing.current = false;
+  }, [actAsGender]);
+
+  const sendAiMessage = useCallback((
+    userMessage: string,
+    onResponse: (content: string) => void
+  ) => {
+    // Queue the message
+    pendingMessages.current.push(userMessage);
+
+    // Clear existing debounce — wait for potential double-text
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Wait 3-4 seconds to see if user sends another message
+    const waitTime = 3000 + Math.random() * 1000;
+    debounceTimer.current = setTimeout(() => {
+      debounceTimer.current = null;
+      processResponse(onResponse);
+    }, waitTime);
+  }, [processResponse]);
 
   const resetAiChat = useCallback(() => {
     conversationHistory.current = [];
+    pendingMessages.current = [];
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    isProcessing.current = false;
     setIsAiMode(false);
     setIsAiTyping(false);
   }, []);
 
   const activateAiMode = useCallback(() => {
     conversationHistory.current = [];
+    pendingMessages.current = [];
     setIsAiMode(true);
     setIsAiTyping(false);
   }, []);
