@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      confession_comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confession_comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "confession_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confession_comments: {
         Row: {
           confession_id: string
@@ -21,6 +50,8 @@ export type Database = {
           created_at: string
           display_name: string
           id: string
+          likes_count: number
+          parent_id: string | null
           user_id: string
         }
         Insert: {
@@ -29,6 +60,8 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          likes_count?: number
+          parent_id?: string | null
           user_id: string
         }
         Update: {
@@ -37,6 +70,8 @@ export type Database = {
           created_at?: string
           display_name?: string
           id?: string
+          likes_count?: number
+          parent_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -45,6 +80,13 @@ export type Database = {
             columns: ["confession_id"]
             isOneToOne: false
             referencedRelation: "confessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "confession_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "confession_comments"
             referencedColumns: ["id"]
           },
         ]
