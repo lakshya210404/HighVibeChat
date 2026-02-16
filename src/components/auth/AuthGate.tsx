@@ -2,12 +2,11 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Mail, Lock, Eye, EyeOff, User, LogIn } from "lucide-react";
+import { User, Lock, Eye, EyeOff, LogIn } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
-type AuthView = "login" | "signup" | "forgot";
+type AuthView = "login" | "signup";
 
 interface AuthGateProps {
   message?: string;
@@ -15,11 +14,10 @@ interface AuthGateProps {
 }
 
 const AuthGate = ({ message = "Sign up to unlock this feature", onSuccess }: AuthGateProps) => {
-  const { user, signUp, signIn, resetPassword } = useAuth();
+  const { user, signUp, signIn } = useAuth();
   const [view, setView] = useState<AuthView>("signup");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -27,38 +25,29 @@ const AuthGate = ({ message = "Sign up to unlock this feature", onSuccess }: Aut
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!username.trim() || !password) return;
     setLoading(true);
 
-    if (view === "forgot") {
-      const { error } = await resetPassword(email);
-      if (error) toast.error(error.message);
-      else {
-        toast.success("Check your email for a reset link! 📧");
-        setView("login");
-      }
-      setLoading(false);
-      return;
-    }
-
     if (view === "signup") {
-      if (!displayName.trim()) {
-        toast.error("Please choose a display name!");
+      if (username.trim().length < 3) {
+        toast.error("Username must be at least 3 characters");
         setLoading(false);
         return;
       }
-      const { error } = await signUp(email, password);
+      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+        toast.error("Username can only contain letters, numbers, and underscores");
+        setLoading(false);
+        return;
+      }
+      const { error } = await signUp(username.trim(), password);
       if (error) {
         toast.error(error.message);
       } else {
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await supabase.from("profiles").update({ display_name: displayName.trim() }).eq("id", newUser.id);
-        }
-        toast.success("Check your email to confirm your account! 🌿");
+        toast.success("Welcome to HighVibeChat! 🌿");
         onSuccess?.();
       }
     } else {
-      const { error } = await signIn(email, password);
+      const { error } = await signIn(username.trim(), password);
       if (error) {
         toast.error(error.message);
       } else {
@@ -85,64 +74,41 @@ const AuthGate = ({ message = "Sign up to unlock this feature", onSuccess }: Aut
 
         <div className="glass-heavy rounded-2xl p-6 border border-border/50">
           <h3 className="font-display text-xl font-bold text-center mb-4">
-            {view === "forgot" ? "Reset Password" : view === "signup" ? "Create Account" : "Sign In"}
+            {view === "signup" ? "Create Account" : "Sign In"}
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            {view === "signup" && (
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Choose a display name"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  className="pl-10 glass border-border/50"
-                  required
-                  maxLength={30}
-                />
-              </div>
-            )}
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="pl-10 glass border-border/50"
                 required
+                maxLength={30}
               />
             </div>
-            {view !== "forgot" && (
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 glass border-border/50"
-                  required
-                  minLength={6}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
-            )}
-
-            {view === "login" && (
-              <div className="text-right">
-                <button type="button" onClick={() => setView("forgot")} className="text-xs text-primary hover:underline">
-                  Forgot password?
-                </button>
-              </div>
-            )}
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pl-10 pr-10 glass border-border/50"
+                required
+                minLength={6}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
 
             <Button
               type="submit"
@@ -150,14 +116,12 @@ const AuthGate = ({ message = "Sign up to unlock this feature", onSuccess }: Aut
               className="w-full h-11 font-display font-semibold rounded-xl"
               style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))' }}
             >
-              {loading ? "Loading..." : view === "forgot" ? "Send Reset Link" : view === "signup" ? "Sign Up" : "Sign In"}
+              {loading ? "Loading..." : view === "signup" ? "Sign Up" : "Sign In"}
             </Button>
           </form>
 
           <p className="text-center text-xs text-muted-foreground mt-4">
-            {view === "forgot" ? (
-              <button onClick={() => setView("login")} className="text-primary hover:underline font-medium">Back to Sign In</button>
-            ) : view === "signup" ? (
+            {view === "signup" ? (
               <>Already have an account? <button onClick={() => setView("login")} className="text-primary hover:underline font-medium">Sign In</button></>
             ) : (
               <>Don't have an account? <button onClick={() => setView("signup")} className="text-primary hover:underline font-medium">Sign Up</button></>

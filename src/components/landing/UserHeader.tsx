@@ -1,34 +1,26 @@
 import { useState } from "react";
-import { useGuest } from "@/contexts/GuestContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { Pencil, Check, X, LogIn, LogOut } from "lucide-react";
+import { Pencil, Check, X, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
-interface UserHeaderProps {
-  onSignInClick?: () => void;
-}
-
-const UserHeader = ({ onSignInClick }: UserHeaderProps) => {
-  const { guestName, setGuestName } = useGuest();
-  const { user, signOut } = useAuth();
+const UserHeader = () => {
+  const { displayName, updateDisplayName, signOut } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(guestName || "");
+  const [editValue, setEditValue] = useState(displayName || "");
 
-  const displayName = user
-    ? (user.user_metadata?.display_name || user.email?.split("@")[0] || "User")
-    : guestName || "Guest";
+  const name = displayName || "User";
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editValue.trim()) return;
-    setGuestName(editValue.trim());
+    await updateDisplayName(editValue.trim());
     setIsEditing(false);
     toast.success("Name updated! ✨");
   };
 
   const handleCancel = () => {
-    setEditValue(guestName || "");
+    setEditValue(displayName || "");
     setIsEditing(false);
   };
 
@@ -42,7 +34,7 @@ const UserHeader = ({ onSignInClick }: UserHeaderProps) => {
       <div className="flex items-center justify-between px-4 py-2.5 max-w-lg mx-auto">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/40 to-accent/30 flex items-center justify-center text-xs font-bold text-primary">
-            {displayName.charAt(0).toUpperCase()}
+            {name.charAt(0).toUpperCase()}
           </div>
 
           <AnimatePresence mode="wait">
@@ -82,35 +74,25 @@ const UserHeader = ({ onSignInClick }: UserHeaderProps) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => {
-                  setEditValue(guestName || "");
+                  setEditValue(displayName || "");
                   setIsEditing(true);
                 }}
                 className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group"
               >
-                <span>{displayName}</span>
+                <span>{name}</span>
                 <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
               </motion.button>
             )}
           </AnimatePresence>
         </div>
 
-        {user ? (
-          <button
-            onClick={() => signOut()}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            Sign Out
-          </button>
-        ) : (
-          <button
-            onClick={onSignInClick}
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 font-medium"
-          >
-            <LogIn className="w-3.5 h-3.5" />
-            Sign In
-          </button>
-        )}
+        <button
+          onClick={() => signOut()}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          Sign Out
+        </button>
       </div>
     </div>
   );
