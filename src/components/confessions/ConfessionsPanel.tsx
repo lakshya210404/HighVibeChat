@@ -16,6 +16,7 @@ interface Confession {
   likes_count: number;
   created_at: string;
   liked_by_me: boolean;
+  display_name: string | null;
 }
 
 const EMOJI_OPTIONS = ["🔥", "💀", "😭", "🤣", "💚", "🫣", "👀", "🥴"];
@@ -40,6 +41,17 @@ const ConfessionsPanel = () => {
 
     if (error) { console.error(error); return; }
 
+    // Fetch display names for all user_ids
+    const userIds = [...new Set((data || []).map(c => c.user_id).filter(Boolean))] as string[];
+    let profileMap: Record<string, string> = {};
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds);
+      profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.display_name || "Anonymous"]));
+    }
+
     // Check which ones user has liked
     const { data: myLikes } = await supabase
       .from("confession_likes")
@@ -52,6 +64,7 @@ const ConfessionsPanel = () => {
       (data || []).map(c => ({
         ...c,
         liked_by_me: likedIds.has(c.id),
+        display_name: c.user_id ? (profileMap[c.user_id] || "Anonymous") : "Anonymous",
       }))
     );
     setLoading(false);
@@ -241,6 +254,7 @@ const ConfessionCard = ({
         {confession.title && (
           <h3 className="font-display font-bold text-sm text-foreground mb-1">{confession.title}</h3>
         )}
+        <p className="text-xs text-primary/70 font-medium mb-1">@{confession.display_name || "Anonymous"}</p>
         <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap break-words">
           {confession.content}
         </p>
