@@ -38,16 +38,17 @@ const VideoPanel = ({
     <div className={`
       relative w-full h-full rounded-xl overflow-hidden bg-card/80 border border-border/30
     `}>
-      {/* Video element */}
-      {hasStream && isVideoEnabled ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={isLocal}
-          className="w-full h-full object-cover"
-        />
-      ) : (
+      {/* Video element - always mounted to preserve srcObject */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted={isLocal}
+        className={`w-full h-full object-cover ${(!hasStream || !isVideoEnabled) ? 'hidden' : ''}`}
+      />
+      
+      {/* Overlay when no stream or video disabled */}
+      {(!hasStream || !isVideoEnabled) && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-card to-background">
           <div className="relative z-10 flex flex-col items-center gap-3">
             {isSearching && !isLocal ? (
