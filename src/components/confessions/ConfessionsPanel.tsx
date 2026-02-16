@@ -154,7 +154,7 @@ const ConfessionsPanel = () => {
             onChange={(e) => setContent(e.target.value)}
             placeholder="Spill the tea... what happened in your chat? 👀"
             className="w-full bg-transparent border-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
-            maxLength={500}
+            maxLength={1000}
           />
           <div className="flex items-center justify-between mt-3">
             <div className="flex gap-1.5">
@@ -181,7 +181,7 @@ const ConfessionsPanel = () => {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
-            {title.length}/100 · {content.length}/500
+            {title.length}/100 · {content.length}/1000
           </p>
         </div>
 
