@@ -30,11 +30,25 @@ const UserHeader = () => {
     setShowProfileEdit(true);
   };
 
+  const [saving, setSaving] = useState(false);
+
   const handleSaveProfile = async () => {
     const trimmedName = editName.trim();
     if (!trimmedName || trimmedName.length < 2) {
       toast.error("Name must be at least 2 characters");
       return;
+    }
+
+    // Check uniqueness if name changed
+    if (trimmedName.toLowerCase() !== (displayName || "").toLowerCase()) {
+      setSaving(true);
+      const { isDisplayNameTaken } = await import("@/lib/checkDisplayName");
+      const taken = await isDisplayNameTaken(trimmedName, user?.id);
+      setSaving(false);
+      if (taken) {
+        toast.error("That name is already taken! Try another one 🌿");
+        return;
+      }
     }
 
     // Update name
@@ -151,10 +165,11 @@ const UserHeader = () => {
               <div className="flex gap-2">
                 <button
                   onClick={handleSaveProfile}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  disabled={saving}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
                 >
                   <Check className="w-4 h-4" />
-                  Save
+                  {saving ? "Checking..." : "Save"}
                 </button>
                 <button
                   onClick={() => setShowProfileEdit(false)}
