@@ -187,10 +187,15 @@ const ChatInterface = ({
     await findNext();
   }, [cleanupWebRTC, resetAiChat, findNext]);
 
-  // Escape key = Next/Skip
+  // Escape key = Next/Skip (works even while typing)
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        // Blur any focused input first
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
         handleNext();
       }
     };
