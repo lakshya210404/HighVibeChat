@@ -325,7 +325,20 @@ const ChatInterface = ({
                 {/* Save */}
                 <Button
                   onClick={async () => {
-                    if (editName.trim().length >= 2) await updateDisplayName(editName.trim());
+                    const trimmed = editName.trim();
+                    if (trimmed.length < 2) {
+                      toast.error("Name must be at least 2 characters");
+                      return;
+                    }
+                    if (trimmed.toLowerCase() !== (displayName || "").toLowerCase()) {
+                      const { isDisplayNameTaken } = await import("@/lib/checkDisplayName");
+                      const taken = await isDisplayNameTaken(trimmed, user?.id);
+                      if (taken) {
+                        toast.error("That name is already taken! Try another one 🌿");
+                        return;
+                      }
+                    }
+                    await updateDisplayName(trimmed);
                     await updateGender(editGender);
                     setShowSettings(false);
                     toast.success("Settings updated! ✨");

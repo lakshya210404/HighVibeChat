@@ -85,6 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setGuestInfoState(info);
   };
 
+  const updateGuestField = (field: Partial<GuestInfo>) => {
+    setGuestInfoState((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...field };
+      localStorage.setItem("hvc_guest", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const clearGuest = () => {
     localStorage.removeItem("hvc_guest");
     setGuestInfoState(null);
@@ -229,7 +238,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("id", user.id);
       setDisplayName(name);
     } else if (guestInfo) {
-      setGuestInfo({ ...guestInfo, name });
+      updateGuestField({ name });
     }
   };
 
@@ -241,7 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("id", user.id);
       setGender(newGender);
     } else if (guestInfo) {
-      setGuestInfo({ ...guestInfo, gender: newGender });
+      updateGuestField({ gender: newGender });
     }
   };
 
