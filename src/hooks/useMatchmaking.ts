@@ -9,6 +9,8 @@ interface Room {
   user2_id: string | null;
   user1_auth_id: string | null;
   user2_auth_id: string | null;
+  user1_country: string | null;
+  user2_country: string | null;
 }
 
 interface Message {

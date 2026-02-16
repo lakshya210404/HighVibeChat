@@ -15,6 +15,20 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
+const COUNTRY_NAMES: Record<string, string> = {
+  US: "United States", CA: "Canada", GB: "United Kingdom", AU: "Australia",
+  NL: "Netherlands", DE: "Germany", FR: "France", ES: "Spain", IT: "Italy",
+  BR: "Brazil", MX: "Mexico", JP: "Japan", KR: "South Korea", IN: "India",
+  TH: "Thailand", JM: "Jamaica", CO: "Colombia", ZA: "South Africa",
+  PT: "Portugal", CZ: "Czech Republic", UY: "Uruguay", AR: "Argentina",
+  NZ: "New Zealand", SE: "Sweden", CH: "Switzerland",
+};
+
+const countryCodeToFlag = (code: string) =>
+  code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(0x1f1e6 + c.charCodeAt(0) - 65));
+
+const countryCodeToName = (code: string) => COUNTRY_NAMES[code.toUpperCase()] || code;
+
 interface ChatInterfaceProps {
   onLeave: () => void;
   onGoElevate?: () => void;
@@ -81,9 +95,10 @@ const ChatInterface = ({
 
   const isVideoMode = mode === 'video-text';
 
-  // Determine peer ID and if we're the initiator
+  // Determine peer ID, auth ID, country, and if we're the initiator
   const peerId = room ? (room.user1_id === userId ? room.user2_id : room.user1_id) : null;
   const peerAuthId = room ? (room.user1_id === userId ? room.user2_auth_id : room.user1_auth_id) : null;
+  const peerCountry = room ? (room.user1_id === userId ? room.user2_country : room.user1_country) : null;
   const isInitiator = room ? room.user1_id === userId : false;
 
   // Reset friend request sent when partner changes
@@ -531,10 +546,18 @@ const ChatInterface = ({
 
             {status === "connected" && (
               <>
-                <div className="text-center py-1">
+                <div className="text-center py-1 space-y-1">
                   <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
                     Connected with a stranger ✌️
                   </span>
+                  {peerCountry && !isAiFallback && (
+                    <div className="flex items-center justify-center gap-1">
+                      <span className="text-sm">{countryCodeToFlag(peerCountry)}</span>
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {countryCodeToName(peerCountry)}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 
                 {messages.map((message) => (

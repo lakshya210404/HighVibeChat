@@ -382,8 +382,10 @@ export type Database = {
           id: string
           status: Database["public"]["Enums"]["room_status"]
           user1_auth_id: string | null
+          user1_country: string | null
           user1_id: string
           user2_auth_id: string | null
+          user2_country: string | null
           user2_id: string | null
         }
         Insert: {
@@ -392,8 +394,10 @@ export type Database = {
           id?: string
           status?: Database["public"]["Enums"]["room_status"]
           user1_auth_id?: string | null
+          user1_country?: string | null
           user1_id: string
           user2_auth_id?: string | null
+          user2_country?: string | null
           user2_id?: string | null
         }
         Update: {
@@ -402,8 +406,10 @@ export type Database = {
           id?: string
           status?: Database["public"]["Enums"]["room_status"]
           user1_auth_id?: string | null
+          user1_country?: string | null
           user1_id?: string
           user2_auth_id?: string | null
+          user2_country?: string | null
           user2_id?: string | null
         }
         Relationships: []

@@ -126,6 +126,8 @@ serve(async (req) => {
                   user2_id: userId,
                   user1_auth_id: matchedUser.auth_user_id || null,
                   user2_auth_id: authUserId || null,
+                  user1_country: matchedUser.country || null,
+                  user2_country: userCountry || null,
                   status: 'active'
                 })
                 .select()
@@ -173,6 +175,8 @@ serve(async (req) => {
                 user2_id: userId,
                 user1_auth_id: matchedUser.auth_user_id || null,
                 user2_auth_id: authUserId || null,
+                user1_country: matchedUser.country || null,
+                user2_country: userCountry || null,
                 status: 'active'
               })
               .select()
