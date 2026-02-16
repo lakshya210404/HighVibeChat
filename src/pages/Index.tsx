@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useGuest } from "@/contexts/GuestContext";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 import VibeParticles from "@/components/landing/VibeParticles";
 import FourTwentySurprise from "@/components/landing/FourTwentySurprise";
@@ -12,24 +13,25 @@ import Reviews from "@/components/landing/Reviews";
 
 import ChatInterface from "@/components/chat/ChatInterface";
 import ModeSelector, { ChatMode } from "@/components/chat/ModeSelector";
-import AgeVerification from "@/components/AgeVerification";
 import BottomNav from "@/components/landing/BottomNav";
 import ThemeSelector from "@/components/landing/ThemeSelector";
 import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
+import AuthGate from "@/components/auth/AuthGate";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
 import { useFriendNotifications } from "@/hooks/useFriendNotifications";
 
 import { SessionVibe } from "@/components/landing/SessionVibes";
 
-type AppState = 'age-verify' | 'home' | 'mode-select' | 'chat';
+type AppState = 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { hasEnteredSite } = useGuest();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
@@ -41,37 +43,23 @@ const Index = () => {
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
-  // Track online presence
+  // Track online presence (only for authenticated users)
   usePresence();
   const { friends, incomingRequests } = useFriends();
   useFriendNotifications(friends, incomingRequests);
 
+  // Redirect to auth if no guest name set
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !hasEnteredSite) {
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [hasEnteredSite, loading, navigate]);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
   }, []);
 
-  const handleAgeVerified = () => {
-    setAppState('home');
-  };
-
-  if (loading) {
-    return (
-      <>
-        <SmokeBackground />
-        <div className="relative z-10 min-h-screen flex items-center justify-center">
-          <div className="text-foreground/60 text-lg font-display animate-pulse">Loading...</div>
-        </div>
-      </>
-    );
-  }
-
-  if (!user) return null;
+  if (!hasEnteredSite) return null;
 
   const handleStartChat = () => {
     setAppState('mode-select');
@@ -100,12 +88,20 @@ const Index = () => {
       return <ConfessionsPanel />;
     }
     if (activeTab === 'friends') {
+      // Gate behind auth
+      if (!user) {
+        return <AuthGate message="Sign up to add friends, send requests, and stay connected!" />;
+      }
       return <FriendsPanel />;
     }
     if (activeTab === 'theme') {
       return <ThemeSelector />;
     }
     if (activeTab === 'elevate') {
+      // Gate premium behind auth
+      if (!user) {
+        return <AuthGate message="Sign up to unlock premium features and elevate your experience!" />;
+      }
       return <BoostPanel />;
     }
     if (activeTab === 'settings') {
@@ -145,9 +141,6 @@ const Index = () => {
       <SmokeBackground />
       <VibeParticles />
       <FourTwentySurprise />
-      {appState === 'age-verify' && (
-        <AgeVerification onVerified={handleAgeVerified} />
-      )}
       
       {appState === 'chat' && (
         <ChatInterface 
@@ -174,7 +167,7 @@ const Index = () => {
           <BottomNav 
             activeTab={activeTab} 
             onTabChange={handleTabChange} 
-            friendRequestCount={incomingRequests.length}
+            friendRequestCount={user ? incomingRequests.length : 0}
           />
         </>
       )}
