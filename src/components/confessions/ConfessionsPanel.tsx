@@ -92,11 +92,11 @@ const ConfessionsPanel = () => {
   }, [fetchConfessions]);
 
   const handleSubmit = async () => {
-    if (!content.trim() || !title.trim()) return;
+    if (!content.trim()) return;
     setSubmitting(true);
     const { error } = await supabase
       .from("confessions")
-      .insert({ title: title.trim(), content: content.trim(), emoji: selectedEmoji, user_id: visitorId });
+      .insert({ title: title.trim() || null, content: content.trim(), emoji: selectedEmoji, user_id: visitorId });
     if (error) {
       toast.error("Failed to post confession");
     } else {
@@ -206,7 +206,7 @@ const ConfessionsPanel = () => {
             <Button
               size="sm"
               onClick={handleSubmit}
-              disabled={!title.trim() || !content.trim() || submitting}
+              disabled={!content.trim() || submitting}
               className="rounded-xl gap-1.5"
             >
               <Send className="w-3.5 h-3.5" />
