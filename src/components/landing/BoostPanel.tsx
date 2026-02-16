@@ -197,7 +197,10 @@ const BoostPanel = () => {
                   </div>
 
                   <div className="text-right">
-                    <span className="font-display font-bold text-xl text-foreground">
+                    <span className="text-xs text-muted-foreground line-through">
+                      ${TIERS[option.id].originalPrice.toFixed(2)}
+                    </span>
+                    <span className="font-display font-bold text-xl text-foreground block">
                       ${TIERS[option.id].price.toFixed(2)}
                     </span>
                     <div className="text-xs text-muted-foreground">{TIERS[option.id].duration}</div>
