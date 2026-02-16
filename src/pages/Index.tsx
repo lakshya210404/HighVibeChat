@@ -103,6 +103,9 @@ const Index = () => {
 
   const renderContent = () => {
     if (activeTab === 'confessions') {
+      if (!user) {
+        return <AuthGate message="Sign up to post and like confessions 🤫" />;
+      }
       return <ConfessionsPanel />;
     }
     if (activeTab === 'friends') {
