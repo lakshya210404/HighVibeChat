@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquareHeart, ChevronUp, ChevronDown, MessageCircle, Send, Trash2 } from "lucide-react";
+import { MessageSquareHeart, ChevronUp, ChevronDown, MessageCircle, Send, Trash2, Users, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,6 +41,8 @@ const getAnonId = (): string => {
   return id;
 };
 
+type FeedTab = "others" | "mine";
+
 const ConfessionsPanel = () => {
   const { user, guestInfo } = useAuth();
   const [confessions, setConfessions] = useState<Confession[]>([]);
@@ -50,6 +52,7 @@ const ConfessionsPanel = () => {
   const [selectedEmoji, setSelectedEmoji] = useState("🔥");
   const [submitting, setSubmitting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<FeedTab>("others");
 
   const visitorId = user?.id || getAnonId();
   const visitorName = user ? (guestInfo?.name || user.email?.split("@")[0] || "Anonymous") : (guestInfo?.name || "Anonymous");
@@ -99,17 +102,22 @@ const ConfessionsPanel = () => {
       .insert({ title: title.trim() || null, content: content.trim(), emoji: selectedEmoji, user_id: visitorId });
     if (error) {
       toast.error("Failed to post confession");
+      console.error(error);
     } else {
       toast.success("Confession posted anonymously 🤫");
       setTitle("");
       setContent("");
       setSelectedEmoji("🔥");
+      // Immediately refetch so the new confession shows up
+      await fetchConfessions();
     }
     setSubmitting(false);
   };
+
   const handleDelete = async (id: string) => {
     await supabase.from("confessions").delete().eq("id", id);
     toast.info("Confession deleted");
+    await fetchConfessions();
   };
 
   const handleVote = async (confession: Confession, type: "up" | "down") => {
@@ -122,12 +130,10 @@ const ConfessionsPanel = () => {
       let downvotes = c.downvotes;
 
       if (currentVote === type) {
-        // Remove vote
         if (type === "up") upvotes--;
         else downvotes--;
         return { ...c, upvotes, downvotes, my_vote: null };
       } else {
-        // Switch or new vote
         if (currentVote === "up") upvotes--;
         if (currentVote === "down") downvotes--;
         if (type === "up") upvotes++;
@@ -137,20 +143,21 @@ const ConfessionsPanel = () => {
     }));
 
     if (currentVote === type) {
-      // Remove vote
       await supabase.from("confession_votes").delete()
         .eq("confession_id", confession.id).eq("user_id", visitorId);
     } else if (currentVote) {
-      // Update vote
       await supabase.from("confession_votes")
         .update({ vote_type: type })
         .eq("confession_id", confession.id).eq("user_id", visitorId);
     } else {
-      // New vote
       await supabase.from("confession_votes")
         .insert({ confession_id: confession.id, user_id: visitorId, vote_type: type });
     }
   };
+
+  const myConfessions = confessions.filter(c => c.user_id === visitorId);
+  const otherConfessions = confessions.filter(c => c.user_id !== visitorId);
+  const displayedConfessions = activeTab === "mine" ? myConfessions : otherConfessions;
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col px-4 py-8">
@@ -173,7 +180,7 @@ const ConfessionsPanel = () => {
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give it a catchy title... 🎯"
+            placeholder="Give it a catchy title... 🎯 (optional)"
             className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
             maxLength={100}
           />
@@ -214,23 +221,53 @@ const ConfessionsPanel = () => {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
-            {title.length}/100 · {content.split(/\s+/).filter(Boolean).length}/1000 words
+            {content.split(/\s+/).filter(Boolean).length}/1000 words
           </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setActiveTab("others")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "others"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Other People's ({otherConfessions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("mine")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              activeTab === "mine"
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            }`}
+          >
+            <User className="w-4 h-4" />
+            My Confessions ({myConfessions.length})
+          </button>
         </div>
 
         {/* Feed */}
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-12 text-muted-foreground">Loading confessions...</div>
-          ) : confessions.length === 0 ? (
+          ) : displayedConfessions.length === 0 ? (
             <div className="text-center py-12">
               <MessageSquareHeart className="w-12 h-12 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-muted-foreground text-sm">No confessions yet</p>
-              <p className="text-muted-foreground/60 text-xs mt-1">Be the first to spill! 🫖</p>
+              <p className="text-muted-foreground text-sm">
+                {activeTab === "mine" ? "You haven't confessed yet" : "No confessions yet"}
+              </p>
+              <p className="text-muted-foreground/60 text-xs mt-1">
+                {activeTab === "mine" ? "Go ahead, spill the tea! ☝️" : "Be the first to spill! 🫖"}
+              </p>
             </div>
           ) : (
-            <AnimatePresence>
-              {confessions.map((confession) => (
+            <AnimatePresence mode="popLayout">
+              {displayedConfessions.map((confession) => (
                 <ConfessionCard
                   key={confession.id}
                   confession={confession}
