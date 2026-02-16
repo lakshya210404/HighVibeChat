@@ -187,20 +187,43 @@ const ChatInterface = ({
     await findNext();
   }, [cleanupWebRTC, resetAiChat, findNext]);
 
-  // Escape key = Next/Skip (works even while typing)
+  // Escape key = Next/Skip (double-tap: first shows warning, second confirms)
+  const escPendingRef = useRef(false);
+  const escTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
-        // Blur any focused input first
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
-        handleNext();
+
+        if (escPendingRef.current) {
+          // Second press — confirm skip
+          escPendingRef.current = false;
+          if (escTimerRef.current) clearTimeout(escTimerRef.current);
+          toast.dismiss("esc-confirm");
+          handleNext();
+        } else {
+          // First press — show warning
+          escPendingRef.current = true;
+          toast("Press ESC again to skip to next chat", {
+            id: "esc-confirm",
+            duration: 2000,
+            icon: "⚡",
+          });
+          escTimerRef.current = setTimeout(() => {
+            escPendingRef.current = false;
+          }, 2000);
+        }
       }
     };
     window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+      if (escTimerRef.current) clearTimeout(escTimerRef.current);
+    };
   }, [handleNext]);
 
   const handleLeave = async () => {
