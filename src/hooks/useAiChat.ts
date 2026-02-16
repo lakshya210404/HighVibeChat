@@ -15,10 +15,15 @@ export const useAiChat = (actAsGender?: string) => {
     onResponse: (content: string) => void
   ) => {
     conversationHistory.current.push({ role: "user", content: userMessage });
+
+    // Delay before showing typing indicator (2-3 seconds) to feel natural
+    const preTypingDelay = 2000 + Math.random() * 1000;
+    await new Promise(resolve => setTimeout(resolve, preTypingDelay));
+
     setIsAiTyping(true);
 
-    // Initial "seen" delay before they start "typing" (1-2 seconds)
-    const seenDelay = 1000 + Math.random() * 1000;
+    // Additional short "seen" delay (0.5-1s) after typing starts
+    const seenDelay = 500 + Math.random() * 500;
     await new Promise(resolve => setTimeout(resolve, seenDelay));
 
     let responseText = "";
