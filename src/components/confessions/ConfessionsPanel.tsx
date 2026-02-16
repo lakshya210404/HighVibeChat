@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquareHeart, ChevronUp, ChevronDown, MessageCircle, Send, Trash2, Users, User } from "lucide-react";
+import { MessageSquareHeart, ChevronUp, ChevronDown, MessageCircle, Send, Trash2, Globe, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -41,7 +41,7 @@ const getAnonId = (): string => {
   return id;
 };
 
-type FeedTab = "others" | "mine";
+type FeedTab = "all" | "mine";
 
 const ConfessionsPanel = () => {
   const { user, guestInfo } = useAuth();
@@ -52,7 +52,7 @@ const ConfessionsPanel = () => {
   const [selectedEmoji, setSelectedEmoji] = useState("🔥");
   const [submitting, setSubmitting] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<FeedTab>("others");
+  const [activeTab, setActiveTab] = useState<FeedTab>("all");
 
   const visitorId = user?.id || getAnonId();
   const visitorName = user ? (guestInfo?.name || user.email?.split("@")[0] || "Anonymous") : (guestInfo?.name || "Anonymous");
@@ -156,8 +156,7 @@ const ConfessionsPanel = () => {
   };
 
   const myConfessions = confessions.filter(c => c.user_id === visitorId);
-  const otherConfessions = confessions.filter(c => c.user_id !== visitorId);
-  const displayedConfessions = activeTab === "mine" ? myConfessions : otherConfessions;
+  const displayedConfessions = activeTab === "mine" ? myConfessions : confessions;
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col px-4 py-8">
@@ -228,15 +227,15 @@ const ConfessionsPanel = () => {
         {/* Tabs */}
         <div className="flex gap-2 mb-4">
           <button
-            onClick={() => setActiveTab("others")}
+            onClick={() => setActiveTab("all")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-              activeTab === "others"
+              activeTab === "all"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted/50 text-muted-foreground hover:bg-muted"
             }`}
           >
-            <Users className="w-4 h-4" />
-            Other People's ({otherConfessions.length})
+            <Globe className="w-4 h-4" />
+            All ({confessions.length})
           </button>
           <button
             onClick={() => setActiveTab("mine")}
