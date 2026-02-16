@@ -1,9 +1,11 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Friend, FriendRequest } from "@/hooks/useFriends";
+import { useSfx } from "@/contexts/SfxContext";
 
 // Simple notification sound using Web Audio API
-const playNotificationSound = (type: "online" | "request") => {
+const playNotificationSound = (type: "online" | "request", enabled: boolean) => {
+  if (!enabled) return;
   try {
     const ctx = new AudioContext();
     const oscillator = ctx.createOscillator();
@@ -39,6 +41,7 @@ export const useFriendNotifications = (
   friends: Friend[],
   incomingRequests: FriendRequest[]
 ) => {
+  const { sfxEnabled } = useSfx();
   const prevOnlineIds = useRef<Set<string>>(new Set());
   const prevRequestIds = useRef<Set<string>>(new Set());
   const initialized = useRef(false);
@@ -55,7 +58,7 @@ export const useFriendNotifications = (
         if (!prevOnlineIds.current.has(id)) {
           const friend = friends.find((f) => f.id === id);
           if (friend) {
-            playNotificationSound("online");
+            playNotificationSound("online", sfxEnabled);
             toast(`${friend.display_name} is now online 🟢`, {
               duration: 4000,
             });
@@ -77,7 +80,7 @@ export const useFriendNotifications = (
     if (initialized.current) {
       incomingRequests.forEach((req) => {
         if (!prevRequestIds.current.has(req.id)) {
-          playNotificationSound("request");
+          playNotificationSound("request", sfxEnabled);
           toast(`${req.sender_name || "Someone"} sent you a friend request! 🤝`, {
             duration: 5000,
           });

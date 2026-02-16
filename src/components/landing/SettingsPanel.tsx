@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSfx } from '@/contexts/SfxContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -36,8 +37,8 @@ const SettingsPanel = ({
   selectedCountries = [],
   onCountriesChange = () => {}
 }: SettingsPanelProps) => {
+  const { sfxEnabled, setSfxEnabled } = useSfx();
   const [privacyMode, setPrivacyMode] = useState(false);
-  const [sfxVolume, setSfxVolume] = useState(true);
   const [autoRollVideo, setAutoRollVideo] = useState(true);
   const [autoRollText, setAutoRollText] = useState(false);
   const [countryFilter, setCountryFilter] = useState(false);
@@ -109,12 +110,12 @@ const SettingsPanel = ({
                 <div className="p-4 rounded-xl glass border border-border/50">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">SFX Volume ({sfxVolume ? 'ON' : 'OFF'})</p>
+                      <p className="font-medium">SFX Volume ({sfxEnabled ? 'ON' : 'OFF'})</p>
                       <p className="text-sm text-muted-foreground">Toggle sound effects on or off</p>
                     </div>
                     <Switch 
-                      checked={sfxVolume} 
-                      onCheckedChange={setSfxVolume}
+                      checked={sfxEnabled} 
+                      onCheckedChange={setSfxEnabled}
                       className="data-[state=checked]:bg-accent"
                     />
                   </div>
