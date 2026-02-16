@@ -20,6 +20,7 @@ import SettingsPanel, { Gender, LookingFor } from "@/components/landing/Settings
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
 import AuthGate from "@/components/auth/AuthGate";
+import UserHeader from "@/components/landing/UserHeader";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
 import { useFriendNotifications } from "@/hooks/useFriendNotifications";
@@ -88,7 +89,6 @@ const Index = () => {
       return <ConfessionsPanel />;
     }
     if (activeTab === 'friends') {
-      // Gate behind auth
       if (!user) {
         return <AuthGate message="Sign up to add friends, send requests, and stay connected!" />;
       }
@@ -98,10 +98,6 @@ const Index = () => {
       return <ThemeSelector />;
     }
     if (activeTab === 'elevate') {
-      // Gate premium behind auth
-      if (!user) {
-        return <AuthGate message="Sign up to unlock premium features and elevate your experience!" />;
-      }
       return <BoostPanel />;
     }
     if (activeTab === 'settings') {
@@ -161,7 +157,8 @@ const Index = () => {
       
       {appState === 'home' && (
         <>
-          <main className="relative z-10 pb-24">
+          <UserHeader onSignInClick={() => setActiveTab('friends')} />
+          <main className="relative z-10 pb-24 pt-14">
             {renderContent()}
           </main>
           <BottomNav 

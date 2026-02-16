@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuth, TIERS, TierKey } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import AuthGate from '@/components/auth/AuthGate';
 
 interface ElevateOption {
   id: TierKey;
@@ -56,13 +57,12 @@ const BoostPanel = () => {
   const [selectedOption, setSelectedOption] = useState<TierKey>('blaze_mode');
   const [isHovering, setIsHovering] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { user, subscribed, currentTier } = useAuth();
-  const navigate = useNavigate();
 
   const handlePurchase = async () => {
     if (!user) {
-      toast.info('Sign in to elevate your experience 🌿');
-      navigate('/auth');
+      setShowAuthDialog(true);
       return;
     }
 
@@ -275,9 +275,17 @@ const BoostPanel = () => {
           className="text-center text-xs text-muted-foreground mt-4 space-y-1"
         >
           <span className="block">Monthly subscription • Cancel anytime</span>
-          {!user && <span className="block opacity-70">Sign in required to subscribe</span>}
         </motion.p>
       </motion.div>
+
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="sm:max-w-md p-0 bg-background border-border overflow-y-auto max-h-[90vh]">
+          <AuthGate
+            message="Sign up to subscribe and elevate your experience! 🌿"
+            onSuccess={() => setShowAuthDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
