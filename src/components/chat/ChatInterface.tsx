@@ -181,11 +181,22 @@ const ChatInterface = ({
     }
   };
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     cleanupWebRTC();
     resetAiChat();
     await findNext();
-  };
+  }, [cleanupWebRTC, resetAiChat, findNext]);
+
+  // Escape key = Next/Skip
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && document.activeElement?.tagName !== "INPUT" && document.activeElement?.tagName !== "TEXTAREA") {
+        handleNext();
+      }
+    };
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
+  }, [handleNext]);
 
   const handleLeave = async () => {
     cleanupWebRTC();
