@@ -12,7 +12,6 @@ import Terms from "./pages/Terms";
 import Safety from "./pages/Safety";
 import Contact from "./pages/Contact";
 import ResetPassword from "./pages/ResetPassword";
-import GenderSelect from "./pages/GenderSelect";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +27,6 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/gender" element={<GenderSelect />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/safety" element={<Safety />} />

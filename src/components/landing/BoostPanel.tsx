@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useAuth, TIERS, TierKey } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import AuthGate from '@/components/auth/AuthGate';
 
 interface ElevateOption {
   id: TierKey;
@@ -55,9 +57,14 @@ const BoostPanel = () => {
   const [selectedOption, setSelectedOption] = useState<TierKey>('blaze_mode');
   const [isHovering, setIsHovering] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const { user, subscribed, currentTier } = useAuth();
 
   const handlePurchase = async () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
 
     if (subscribed) {
       // Open customer portal to manage subscription
@@ -270,6 +277,15 @@ const BoostPanel = () => {
           <span className="block">Monthly subscription • Cancel anytime</span>
         </motion.p>
       </motion.div>
+
+      <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <DialogContent className="sm:max-w-md p-0 border-border/50 bg-background">
+          <AuthGate
+            message="Create an account to subscribe and unlock premium features 🔥"
+            onSuccess={() => setShowAuthDialog(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -25,6 +25,11 @@ export const TIERS = {
 
 export type TierKey = keyof typeof TIERS;
 
+interface GuestInfo {
+  name: string;
+  gender: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -34,17 +39,20 @@ interface AuthContextType {
   subscriptionEnd: string | null;
   displayName: string | null;
   gender: string | null;
-  signUp: (username: string, password: string) => Promise<{ error: any }>;
-  signIn: (username: string, password: string) => Promise<{ error: any }>;
+  guestInfo: GuestInfo | null;
+  isGuest: boolean;
+  setGuestInfo: (info: GuestInfo) => void;
+  clearGuest: () => void;
+  signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (password: string) => Promise<{ error: any }>;
   updateDisplayName: (name: string) => Promise<void>;
   checkSubscription: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Convert username to a pseudo-email for Supabase
-const toEmail = (username: string) => `${username.toLowerCase().replace(/[^a-z0-9_]/g, "")}@highvibechat.app`;
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -55,6 +63,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [gender, setGender] = useState<string | null>(null);
+  const [guestInfo, setGuestInfoState] = useState<GuestInfo | null>(() => {
+    const stored = localStorage.getItem("hvc_guest");
+    return stored ? JSON.parse(stored) : null;
+  });
+
+  const isGuest = !user && !!guestInfo;
+
+  const setGuestInfo = (info: GuestInfo) => {
+    localStorage.setItem("hvc_guest", JSON.stringify(info));
+    setGuestInfoState(info);
+  };
+
+  const clearGuest = () => {
+    localStorage.removeItem("hvc_guest");
+    setGuestInfoState(null);
+  };
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -123,23 +147,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Auto-refresh subscription every 60s
   useEffect(() => {
     if (!user) return;
     const interval = setInterval(checkSubscription, 60000);
     return () => clearInterval(interval);
   }, [user]);
 
-  const signUp = async (username: string, password: string) => {
-    const email = toEmail(username);
-    
-    // Check if username is already taken by checking profiles
+  const signUp = async (email: string, password: string, username: string) => {
+    // Check if username is already taken
     const { data: existing } = await supabase
       .from("profiles")
       .select("id")
       .eq("display_name", username)
       .maybeSingle();
-    
+
     if (existing) {
       return { error: { message: "Username already taken! Try another one." } };
     }
@@ -149,44 +170,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       password,
       options: { emailRedirectTo: window.location.origin },
     });
-    
+
     if (error) return { error };
 
-    // Update display name in profile
     if (data.user) {
+      // Update profile with username and gender from guest info
+      const genderVal = guestInfo?.gender || "other";
       await supabase
         .from("profiles")
-        .update({ display_name: username, email: null })
+        .update({ display_name: username, gender: genderVal })
         .eq("id", data.user.id);
       setDisplayName(username);
+      setGender(genderVal);
+      // Clear guest since they're now a real user
+      clearGuest();
     }
-    
+
     return { error: null };
   };
 
-  const signIn = async (username: string, password: string) => {
-    const email = toEmail(username);
+  const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error ? { message: "Invalid username or password" } : null };
+    if (!error) clearGuest();
+    return { error: error ? { message: "Invalid email or password" } : null };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
-  const updateDisplayName = async (name: string) => {
-    if (!user) return;
-    await supabase
-      .from("profiles")
-      .update({ display_name: name })
-      .eq("id", user.id);
-    setDisplayName(name);
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error };
   };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error };
+  };
+
+  const updateDisplayName = async (name: string) => {
+    if (user) {
+      await supabase
+        .from("profiles")
+        .update({ display_name: name })
+        .eq("id", user.id);
+      setDisplayName(name);
+    } else if (guestInfo) {
+      setGuestInfo({ ...guestInfo, name });
+    }
+  };
+
+  const effectiveDisplayName = user ? displayName : guestInfo?.name || null;
+  const effectiveGender = user ? gender : guestInfo?.gender || null;
 
   return (
     <AuthContext.Provider value={{
-      user, session, loading, subscribed, currentTier, subscriptionEnd, displayName, gender,
-      signUp, signIn, signOut, updateDisplayName, checkSubscription,
+      user, session, loading, subscribed, currentTier, subscriptionEnd,
+      displayName: effectiveDisplayName,
+      gender: effectiveGender,
+      guestInfo, isGuest, setGuestInfo, clearGuest,
+      signUp, signIn, signOut, resetPassword, updatePassword, updateDisplayName, checkSubscription,
     }}>
       {children}
     </AuthContext.Provider>
