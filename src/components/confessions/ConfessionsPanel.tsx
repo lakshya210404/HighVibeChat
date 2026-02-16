@@ -31,7 +31,6 @@ const ConfessionsPanel = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchConfessions = useCallback(async () => {
-    if (!user) return;
 
     const { data, error } = await supabase
       .from("confessions")
@@ -53,12 +52,14 @@ const ConfessionsPanel = () => {
     }
 
     // Check which ones user has liked
-    const { data: myLikes } = await supabase
-      .from("confession_likes")
-      .select("confession_id")
-      .eq("user_id", user.id);
-
-    const likedIds = new Set(myLikes?.map(l => l.confession_id) || []);
+    let likedIds = new Set<string>();
+    if (user) {
+      const { data: myLikes } = await supabase
+        .from("confession_likes")
+        .select("confession_id")
+        .eq("user_id", user.id);
+      likedIds = new Set(myLikes?.map(l => l.confession_id) || []);
+    }
 
     setConfessions(
       (data || []).map(c => ({
@@ -152,55 +153,61 @@ const ConfessionsPanel = () => {
           Share your wildest chat stories. 100% anonymous. No judgement. 🤫
         </p>
 
-        {/* Post form */}
-        <div className="p-4 rounded-xl bg-card/70 border border-border mb-6">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Give it a catchy title... 🎯"
-            className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
-            maxLength={100}
-          />
-          <div className="h-px bg-border/50 mb-2" />
-          <textarea
-            value={content}
-            onChange={(e) => {
-              const words = e.target.value.split(/\s+/).filter(Boolean);
-              if (words.length <= 1000 || e.target.value.length < content.length) {
-                setContent(e.target.value);
-              }
-            }}
-            placeholder="Spill the tea... what happened in your chat? 👀"
-            className="w-full bg-transparent border-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
-          />
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex gap-1.5">
-              {EMOJI_OPTIONS.map((e) => (
-                <button
-                  key={e}
-                  onClick={() => setSelectedEmoji(e)}
-                  className={`text-lg w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
-                    selectedEmoji === e ? "bg-primary/20 scale-110" : "hover:bg-muted/50"
-                  }`}
-                >
-                  {e}
-                </button>
-              ))}
+        {/* Post form - only for logged in users */}
+        {user ? (
+          <div className="p-4 rounded-xl bg-card/70 border border-border mb-6">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Give it a catchy title... 🎯"
+              className="w-full bg-transparent border-none text-sm font-display font-semibold text-foreground placeholder:text-muted-foreground/60 focus:outline-none mb-2"
+              maxLength={100}
+            />
+            <div className="h-px bg-border/50 mb-2" />
+            <textarea
+              value={content}
+              onChange={(e) => {
+                const words = e.target.value.split(/\s+/).filter(Boolean);
+                if (words.length <= 1000 || e.target.value.length < content.length) {
+                  setContent(e.target.value);
+                }
+              }}
+              placeholder="Spill the tea... what happened in your chat? 👀"
+              className="w-full bg-transparent border-none resize-none text-sm text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <div className="flex gap-1.5">
+                {EMOJI_OPTIONS.map((e) => (
+                  <button
+                    key={e}
+                    onClick={() => setSelectedEmoji(e)}
+                    className={`text-lg w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                      selectedEmoji === e ? "bg-primary/20 scale-110" : "hover:bg-muted/50"
+                    }`}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+              <Button
+                size="sm"
+                onClick={handleSubmit}
+                disabled={!title.trim() || !content.trim() || submitting}
+                className="rounded-xl gap-1.5"
+              >
+                <Send className="w-3.5 h-3.5" />
+                Confess
+              </Button>
             </div>
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              disabled={!title.trim() || !content.trim() || submitting}
-              className="rounded-xl gap-1.5"
-            >
-              <Send className="w-3.5 h-3.5" />
-              Confess
-            </Button>
+            <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
+              {title.length}/100 · {content.split(/\s+/).filter(Boolean).length}/1000 words
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground/50 mt-2 text-right">
-            {title.length}/100 · {content.split(/\s+/).filter(Boolean).length}/1000 words
-          </p>
-        </div>
+        ) : (
+          <div className="p-4 rounded-xl bg-card/70 border border-border mb-6 text-center">
+            <p className="text-sm text-muted-foreground">Sign up to post your own confessions 🤫</p>
+          </div>
+        )}
 
         {/* Feed */}
         <div className="space-y-3">
