@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus, Crown } from "lucide-react";
+import { Send, X, SkipForward, Flag, Leaf, Video, VideoOff, Mic, MicOff, Camera, UserPlus, Crown, Settings, Lock, Check, User, Users } from "lucide-react";
 import { useMatchmaking } from "@/hooks/useMatchmaking";
 import { useWebRTCCall } from "@/hooks/useWebRTCCall";
 import { useTypingIndicator } from "@/hooks/useTypingIndicator";
@@ -11,6 +11,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import VideoPanel from "./VideoPanel";
 import { ChatMode } from "./ModeSelector";
 import { toast } from "sonner";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 interface ChatInterfaceProps {
   onLeave: () => void;
@@ -54,9 +57,13 @@ const ChatInterface = ({
 
   const [inputValue, setInputValue] = useState("");
   const [friendRequestSent, setFriendRequestSent] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, displayName, gender: userGender, updateDisplayName, updateGender } = useAuth();
   const { sendFriendRequest } = useFriends();
+  const [editName, setEditName] = useState(displayName || "");
+  const [editGender, setEditGender] = useState(userGender || gender);
+  const [editLookingFor, setEditLookingFor] = useState(lookingFor);
 
   const { isPartnerTyping, sendTyping } = useTypingIndicator({
     roomId: status === 'connected' ? room?.id || null : null,
@@ -207,6 +214,132 @@ const ChatInterface = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <Sheet open={showSettings} onOpenChange={setShowSettings}>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs rounded-full bg-muted/50 text-muted-foreground hover:text-foreground"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80 bg-background border-border/50">
+              <SheetHeader>
+                <SheetTitle className="font-display text-lg">Chat Settings</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-5 mt-6">
+                {/* Elevate */}
+                {!isPremium && onGoElevate && (
+                  <button
+                    onClick={() => { setShowSettings(false); onGoElevate(); }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 hover:from-primary/20 hover:to-accent/20 transition-all"
+                  >
+                    <Crown className="w-5 h-5 text-primary" />
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-primary">Elevate</p>
+                      <p className="text-xs text-muted-foreground">Unlock premium features</p>
+                    </div>
+                  </button>
+                )}
+
+                {/* Display Name */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <User className="w-3.5 h-3.5" />
+                    <span>Display Name</span>
+                  </div>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="h-9 text-sm bg-muted/50 border-border/50 rounded-xl"
+                    maxLength={30}
+                    placeholder="Your name"
+                  />
+                </div>
+
+                {/* Your Gender */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <User className="w-3.5 h-3.5" />
+                    <span>Your Gender</span>
+                  </div>
+                  <div className="flex gap-2">
+                    {([
+                      { value: "male", emoji: "♂️", label: "Male" },
+                      { value: "female", emoji: "♀️", label: "Female" },
+                      { value: "other", emoji: "⚧️", label: "Other" },
+                    ] as const).map((opt) => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setEditGender(opt.value)}
+                        className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border transition-all text-sm ${
+                          editGender === opt.value
+                            ? "border-primary bg-primary/10 text-primary font-semibold"
+                            : "border-border/50 bg-card/50 text-muted-foreground hover:border-border"
+                        }`}
+                      >
+                        <span>{opt.emoji}</span>
+                        <span>{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Looking For */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>Looking For</span>
+                    {!isPremium && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/20 text-accent">Premium</span>
+                    )}
+                  </div>
+                  <div className="relative">
+                    {!isPremium && (
+                      <div className="absolute inset-0 bg-card/80 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
+                        <div className="text-center">
+                          <Lock className="w-5 h-5 text-accent mx-auto mb-1" />
+                          <p className="text-xs text-muted-foreground">Elevate to unlock</p>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 p-3 rounded-xl border border-border/50 bg-card/50">
+                      {(["everyone", "male", "female", "other"] as const).map((val) => (
+                        <button
+                          key={val}
+                          onClick={() => isPremium && setEditLookingFor(val)}
+                          className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+                            editLookingFor === val
+                              ? "bg-primary/20 text-primary font-semibold border border-primary/30"
+                              : "bg-muted/30 text-muted-foreground border border-border/30 hover:border-border"
+                          }`}
+                        >
+                          {val.charAt(0).toUpperCase() + val.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save */}
+                <Button
+                  onClick={async () => {
+                    if (editName.trim().length >= 2) await updateDisplayName(editName.trim());
+                    await updateGender(editGender);
+                    setShowSettings(false);
+                    toast.success("Settings updated! ✨");
+                  }}
+                  className="w-full gap-2 rounded-xl"
+                  size="sm"
+                >
+                  <Check className="w-4 h-4" />
+                  Save Changes
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
+
           {!isPremium && onGoElevate && (
             <Button
               variant="ghost"
