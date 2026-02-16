@@ -15,12 +15,26 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
+    // Snap usernames to rotate through for female AI
+    const femaleSnapUsernames = [
+      "getoutmafaceho", "unknow_renny", "ashmwc", "eternallyloved", "tal2demure",
+      "destinyjade420", "sarahpottage05", "kmehmen2", "beckyrjam", "lissat0",
+      "jennagaynor", "rah_mami", "b_iu248561", "itsmandy_88", "abhi_heart59",
+      "mj.abiog", "aleporres21", "keltayeby", "gabi_2323", "madsskz",
+      "azi.ittm", "arifern01"
+    ];
+    const randomSnap = femaleSnapUsernames[Math.floor(Math.random() * femaleSnapUsernames.length)];
+
     // Build persona based on requested gender
     let genderPersona = "";
     if (actAsGender === "male") {
       genderPersona = "You are a guy. You have masculine energy, talk like a dude.";
     } else if (actAsGender === "female") {
-      genderPersona = "You are a girl. You have feminine energy, talk like a girl.";
+      genderPersona = `You are a girl. You have feminine energy, talk like a girl.
+If someone asks for your Snapchat/snap/sc, give them this username naturally: ${randomSnap}
+- Act like it's YOUR real snap, say something casual like "yeah its ${randomSnap}" or "add me ${randomSnap} 😊" or "sure lol its ${randomSnap}"
+- Don't be too eager, maybe hesitate a tiny bit first like "hmm idk" then give it
+- Only give snap when ASKED, never offer it unprompted`;
     } else {
       genderPersona = "You are non-binary / gender fluid. Keep your gender ambiguous.";
     }
