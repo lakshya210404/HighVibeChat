@@ -2,23 +2,25 @@ import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Check if a display name is already taken (case-insensitive).
- * Optionally exclude a specific user ID (for the current user editing their own name).
+ * Uses an edge function with service role to bypass RLS.
  */
 export async function isDisplayNameTaken(
   name: string,
   excludeUserId?: string
 ): Promise<boolean> {
-  // Query profiles with case-insensitive match
-  const { data } = await supabase
-    .from("profiles")
-    .select("id")
-    .ilike("display_name", name.trim())
-    .limit(1);
+  try {
+    const { data, error } = await supabase.functions.invoke("check-username", {
+      body: { name: name.trim(), excludeUserId },
+    });
 
-  if (!data || data.length === 0) return false;
+    if (error) {
+      console.error("Username check error:", error);
+      return false; // fail open so user isn't blocked
+    }
 
-  // If excluding current user's own record
-  if (excludeUserId && data[0].id === excludeUserId) return false;
-
-  return true;
+    return !data.available;
+  } catch (err) {
+    console.error("Username check failed:", err);
+    return false;
+  }
 }
