@@ -145,7 +145,9 @@ export const useMatchmaking = (
         }
       }, 2000);
 
-      // AI fallback after 20 seconds
+      // Premium: AI fallback after 5s (3s real match window + 2s buffer)
+      // Free: AI fallback after 10s
+      const aiFallbackMs = isPremium ? 5000 : 10000;
       aiTimeoutRef.current = setTimeout(() => {
         // Only activate if still searching
         clearPolling();
@@ -157,7 +159,7 @@ export const useMatchmaking = (
         supabase.functions.invoke('matchmaking', {
           body: { action: 'leave_queue', userId }
         }).catch(() => {});
-      }, 10000);
+      }, aiFallbackMs);
     } catch (error) {
       console.error('Join queue error:', error);
       setStatus('idle');
