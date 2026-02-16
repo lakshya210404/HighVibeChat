@@ -4,73 +4,64 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { User, Lock, Eye, EyeOff } from "lucide-react";
+import { User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import SmokeBackground from "@/components/ui/SmokeBackground";
 
-type AuthView = "login" | "signup";
+type EntryStep = "splash" | "username" | "gender";
+
+const genderOptions = [
+  { value: "male", emoji: "♂️", label: "Male" },
+  { value: "female", emoji: "♀️", label: "Female" },
+  { value: "other", emoji: "⚧️", label: "Other" },
+];
 
 const Auth = () => {
-  const [showSplash, setShowSplash] = useState(true);
-  const [view, setView] = useState<AuthView>("signup");
+  const [step, setStep] = useState<EntryStep>("splash");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const { user, loading: authLoading, signUp, signIn } = useAuth();
+  const [selectedGender, setSelectedGender] = useState<string | null>(null);
+  const { user, guestInfo, setGuestInfo } = useAuth();
   const navigate = useNavigate();
 
+  // If already logged in or guest, go home
   useEffect(() => {
-    if (!authLoading && user) {
+    if (user || guestInfo) {
       navigate("/");
     }
-  }, [user, authLoading, navigate]);
+  }, [user, guestInfo, navigate]);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShowSplash(false), 2800);
+    const timer = setTimeout(() => setStep("username"), 2800);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!username.trim() || !password) return;
-    setLoading(true);
-
-    if (view === "signup") {
-      if (username.trim().length < 3) {
-        toast.error("Username must be at least 3 characters");
-        setLoading(false);
-        return;
-      }
-      if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
-        toast.error("Username can only contain letters, numbers, and underscores");
-        setLoading(false);
-        return;
-      }
-      const { error } = await signUp(username.trim(), password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Welcome to HighVibeChat! 🌿");
-        navigate("/gender");
-      }
-    } else {
-      const { error } = await signIn(username.trim(), password);
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Welcome back! 🔥");
-        navigate("/");
-      }
+  const handleUsernameNext = () => {
+    if (!username.trim() || username.trim().length < 2) {
+      toast.error("Pick a name with at least 2 characters");
+      return;
     }
-    setLoading(false);
+    setStep("gender");
+  };
+
+  const handleEnter = () => {
+    if (!selectedGender) {
+      toast.error("Pick your vibe first!");
+      return;
+    }
+    setGuestInfo({ name: username.trim(), gender: selectedGender });
+    toast.success("Welcome to HighVibeChat! 🌿");
+    navigate("/");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleUsernameNext();
   };
 
   return (
     <>
       <SmokeBackground />
       <AnimatePresence mode="wait">
-        {showSplash ? (
+        {step === "splash" && (
           <motion.div
             key="splash"
             className="fixed inset-0 z-50 flex flex-col items-center justify-center"
@@ -142,110 +133,121 @@ const Auth = () => {
               ))}
             </motion.div>
           </motion.div>
-        ) : (
+        )}
+
+        {step === "username" && (
           <motion.div
-            key="auth"
+            key="username"
             className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="w-full max-w-sm">
-              <div className="text-center mb-8">
-                <motion.img
-                  src="/logo.svg"
-                  alt="HighVibeChat"
-                  className="w-20 h-auto mx-auto mb-4"
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ duration: 0.4 }}
+            <div className="w-full max-w-sm text-center">
+              <motion.img
+                src="/logo.svg"
+                alt="HighVibeChat"
+                className="w-20 h-auto mx-auto mb-4"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+              />
+              <h1 className="font-display text-3xl font-bold mb-2">
+                <span className="text-gradient">HighVibe</span>Chat
+              </h1>
+              <p className="text-muted-foreground text-sm mb-8">
+                Choose a display name to get started
+              </p>
+
+              <div className="relative mb-4">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Your name"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  className="pl-10 glass border-border/50 h-12 text-lg"
+                  maxLength={30}
+                  autoFocus
                 />
-                <h1 className="font-display text-3xl font-bold">
-                  <span className="text-gradient">HighVibe</span>Chat
-                </h1>
-                <p className="text-muted-foreground text-sm mt-2">
-                  {view === "signup"
-                    ? "Pick a username and create your account"
-                    : "Sign in with your username"}
-                </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10 glass border-border/50"
-                    required
-                    maxLength={30}
-                    autoFocus
-                  />
-                </div>
+              <Button
+                onClick={handleUsernameNext}
+                disabled={!username.trim()}
+                className="w-full h-12 font-display font-semibold text-lg rounded-xl"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+              >
+                Next
+              </Button>
 
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 glass border-border/50"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              <p className="text-center text-xs text-muted-foreground/60 mt-6">
+                No account needed • Just vibes ✌️
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {step === "gender" && (
+          <motion.div
+            key="gender"
+            className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-full max-w-sm text-center">
+              <motion.img
+                src="/logo.svg"
+                alt="HighVibeChat"
+                className="w-16 h-auto mx-auto mb-4"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+              />
+              <h1 className="font-display text-2xl font-bold mb-2">
+                What's your <span className="text-gradient">vibe</span>, {username.trim()}?
+              </h1>
+              <p className="text-muted-foreground text-sm mb-8">
+                This helps us match you better
+              </p>
+
+              <div className="flex gap-3 justify-center mb-8">
+                {genderOptions.map((opt) => (
+                  <motion.button
+                    key={opt.value}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedGender(opt.value)}
+                    className={`
+                      flex flex-col items-center gap-2 p-5 rounded-2xl border-2 transition-all w-28
+                      ${selectedGender === opt.value
+                        ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                        : "border-border/50 bg-card/50 hover:border-border hover:bg-card/80"
+                      }
+                    `}
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
+                    <span className="text-3xl">{opt.emoji}</span>
+                    <span className="font-semibold text-sm">{opt.label}</span>
+                  </motion.button>
+                ))}
+              </div>
 
-                <Button
-                  type="submit"
-                  disabled={loading || !username.trim() || !password}
-                  className="w-full h-12 font-display font-semibold text-lg rounded-xl"
-                  style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))' }}
-                >
-                  {loading
-                    ? "Loading..."
-                    : view === "signup"
-                      ? "Create Account"
-                      : "Sign In"}
-                </Button>
-              </form>
+              <Button
+                onClick={handleEnter}
+                disabled={!selectedGender}
+                className="w-full h-12 font-display font-semibold text-lg rounded-xl"
+                style={{ background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))" }}
+              >
+                Enter HighVibeChat
+              </Button>
 
-              <p className="text-center text-sm text-muted-foreground mt-6">
-                {view === "signup" ? (
-                  <>
-                    Already have an account?{" "}
-                    <button
-                      onClick={() => setView("login")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Sign In
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Don't have an account?{" "}
-                    <button
-                      onClick={() => setView("signup")}
-                      className="text-primary hover:underline font-medium"
-                    >
-                      Sign Up
-                    </button>
-                  </>
-                )}
-              </p>
-
-              <p className="text-center text-xs text-muted-foreground/60 mt-4">
-                Anonymous • No email needed • Just vibes
-              </p>
+              <button
+                onClick={() => setStep("username")}
+                className="text-muted-foreground text-sm mt-4 hover:text-foreground transition-colors"
+              >
+                ← Back
+              </button>
             </div>
           </motion.div>
         )}

@@ -18,6 +18,7 @@ import BoostPanel from "@/components/landing/BoostPanel";
 import SettingsPanel, { Gender, LookingFor } from "@/components/landing/SettingsPanel";
 import FriendsPanel from "@/components/friends/FriendsPanel";
 import ConfessionsPanel from "@/components/confessions/ConfessionsPanel";
+import AuthGate from "@/components/auth/AuthGate";
 import UserHeader from "@/components/landing/UserHeader";
 import { usePresence } from "@/hooks/usePresence";
 import { useFriends } from "@/hooks/useFriends";
@@ -29,36 +30,35 @@ type AppState = 'home' | 'mode-select' | 'chat';
 type NavTab = 'home' | 'elevate' | 'theme' | 'settings' | 'friends' | 'confessions';
 
 const Index = () => {
-  const { user, loading, subscribed, currentTier, gender: userGender } = useAuth();
+  const { user, loading, subscribed, gender: userGender, guestInfo, isGuest } = useAuth();
   const navigate = useNavigate();
   const [appState, setAppState] = useState<AppState>('home');
   const [chatMode, setChatMode] = useState<ChatMode>('video-text');
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [interests, setInterests] = useState<string[]>([]);
-  const [gender, setGender] = useState<Gender>((userGender as Gender) || 'other');
+  const [gender, setGender] = useState<Gender>((userGender as Gender) || (guestInfo?.gender as Gender) || 'other');
   const [lookingFor, setLookingFor] = useState<LookingFor>('everyone');
   const isPremium = subscribed;
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [selectedVibe, setSelectedVibe] = useState<SessionVibe>(null);
 
-  // Track online presence
+  // Track online presence (only for authenticated users)
   usePresence();
   const { friends, incomingRequests } = useFriends();
   useFriendNotifications(friends, incomingRequests);
 
-  // Redirect to auth if not logged in, or gender select if no gender set
+  // Redirect to entry if no user and no guest
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !guestInfo) {
       navigate("/auth");
-    } else if (!loading && user && !userGender) {
-      navigate("/gender");
     }
-  }, [user, loading, navigate, userGender]);
+  }, [user, loading, navigate, guestInfo]);
 
-  // Sync gender from profile
+  // Sync gender from profile or guest
   useEffect(() => {
     if (userGender) setGender(userGender as Gender);
-  }, [userGender]);
+    else if (guestInfo?.gender) setGender(guestInfo.gender as Gender);
+  }, [userGender, guestInfo?.gender]);
 
   useEffect(() => {
     document.title = "HighVibeChat - Anonymous Chat for Elevated Minds";
@@ -75,7 +75,8 @@ const Index = () => {
     );
   }
 
-  if (!user) return null;
+  // Need either user or guest
+  if (!user && !guestInfo) return null;
 
   const handleStartChat = () => {
     setAppState('mode-select');
@@ -104,6 +105,10 @@ const Index = () => {
       return <ConfessionsPanel />;
     }
     if (activeTab === 'friends') {
+      // Friends requires auth
+      if (!user) {
+        return <AuthGate message="Sign up to add friends and save your connections 🌿" />;
+      }
       return <FriendsPanel />;
     }
     if (activeTab === 'theme') {

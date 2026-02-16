@@ -1,16 +1,22 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { Pencil, Check, X, LogOut } from "lucide-react";
+import { Pencil, Check, X, LogOut, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import AuthGate from "@/components/auth/AuthGate";
 
 const UserHeader = () => {
-  const { displayName, updateDisplayName, signOut } = useAuth();
+  const { displayName, gender, user, isGuest, updateDisplayName, signOut } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(displayName || "");
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const navigate = useNavigate();
 
   const name = displayName || "User";
+  const genderEmoji = gender === "male" ? "♂️" : gender === "female" ? "♀️" : "⚧️";
 
   const handleSave = async () => {
     if (!editValue.trim()) return;
@@ -80,19 +86,42 @@ const UserHeader = () => {
                 className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group"
               >
                 <span>{name}</span>
+                <span className="text-xs">{genderEmoji}</span>
                 <Pencil className="w-3 h-3 text-muted-foreground group-hover:text-primary transition-colors" />
               </motion.button>
             )}
           </AnimatePresence>
         </div>
 
-        <button
-          onClick={() => signOut()}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Sign Out
-        </button>
+        <div className="flex items-center gap-2">
+          {isGuest && (
+            <Dialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+              <DialogTrigger asChild>
+                <button
+                  className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-lg bg-primary/10 hover:bg-primary/20"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  Sign In
+                </button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md p-0 border-border/50 bg-background">
+                <AuthGate 
+                  message="Sign in or create an account to save your progress 🌿" 
+                  onSuccess={() => setShowAuthDialog(false)} 
+                />
+              </DialogContent>
+            </Dialog>
+          )}
+          {user && (
+            <button
+              onClick={() => signOut()}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-muted/50"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
