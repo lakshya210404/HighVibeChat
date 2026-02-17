@@ -42,6 +42,7 @@ serve(async (req) => {
         const userLookingFor = lookingFor || 'everyone';
         const userIsPremium = isPremium || false;
         const userCountries: string[] = countries || [];
+        const userCountry = userCountries.length > 0 ? userCountries[0] : null;
         const userVibe: string | null = vibe || null;
 
         // Helper to check gender compatibility
@@ -197,8 +198,6 @@ serve(async (req) => {
         }
 
         // No match found, add to queue with all preferences
-        // For country, we'll store the first selected country as the user's "location"
-        const userCountry = userCountries.length > 0 ? userCountries[0] : null;
         
         const { error: queueError } = await supabase
           .from('matchmaking_queue')
