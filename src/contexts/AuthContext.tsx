@@ -5,30 +5,21 @@ import type { User, Session } from "@supabase/supabase-js";
 export const TIERS = {
   light_up: {
     name: "Light Up",
-    price_id: "price_1T1LUdA3j4mVkCeQqoWJJ6KD",
-    product_id: "prod_TzK81bjcK67PB2",
+    price_id: "price_1T0r4bA3j4mVkCeQeNwdJjMy",
+    product_id: "prod_Tyoi7XF2WXm404",
     price: 4.20,
-    originalPrice: 6.99,
-    duration: "30 min",
-    durationMinutes: 30,
   },
   blaze_mode: {
     name: "Blaze Mode",
-    price_id: "price_1T1LUpA3j4mVkCeQ2nnBoHJv",
-    product_id: "prod_TzK9UFz4NSlH75",
+    price_id: "price_1T0r63A3j4mVkCeQqL3SNGqC",
+    product_id: "prod_TyojcldsnKwUsH",
     price: 8.40,
-    originalPrice: 12.99,
-    duration: "1 hour",
-    durationMinutes: 60,
   },
   elevated: {
     name: "Elevated",
-    price_id: "price_1T1LV0A3j4mVkCeQE4NkmJZk",
-    product_id: "prod_TzK9aXvzTghUs6",
+    price_id: "price_1T0r6JA3j4mVkCeQdgf9GU9E",
+    product_id: "prod_TyojKmJjtG5eYB",
     price: 16.80,
-    originalPrice: 24.99,
-    duration: "24 hours",
-    durationMinutes: 1440,
   },
 } as const;
 
