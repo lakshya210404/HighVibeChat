@@ -285,6 +285,12 @@ serve(async (req) => {
         if (!roomId || !message) {
           throw new Error('Room ID and message required');
         }
+        if (typeof message !== 'string' || message.trim().length === 0) {
+          throw new Error('Message must be a non-empty string');
+        }
+        if (message.length > 5000) {
+          throw new Error('Message too long (max 5000 characters)');
+        }
 
         const { data, error } = await supabase
           .from('messages')
