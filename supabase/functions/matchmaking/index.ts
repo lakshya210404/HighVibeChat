@@ -6,6 +6,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-user-id',
 };
 
+const VALID_GENDERS = ['male', 'female', 'other'];
+const VALID_VIBES = ['chill', 'deep', 'flirty', 'funny'];
+const MAX_INTERESTS = 10;
+const MAX_INTEREST_LENGTH = 50;
+const MAX_COUNTRIES = 10;
+const MAX_COUNTRY_LENGTH = 5;
+
+const sanitizeString = (val: unknown, maxLen: number): string => {
+  if (typeof val !== 'string') return '';
+  return val.replace(/<[^>]*>/g, '').substring(0, maxLen).trim();
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -37,13 +49,18 @@ serve(async (req) => {
           );
         }
 
-        const userInterests = interests || [];
-        const userGender = gender || 'other';
-        const userLookingFor = lookingFor || 'everyone';
-        const userIsPremium = isPremium || false;
-        const userCountries: string[] = countries || [];
+        // Validate and sanitize inputs
+        const userInterests = Array.isArray(interests)
+          ? interests.slice(0, MAX_INTERESTS).map((i: unknown) => sanitizeString(i, MAX_INTEREST_LENGTH)).filter(Boolean)
+          : [];
+        const userGender = VALID_GENDERS.includes(gender) ? gender : 'other';
+        const userLookingFor = VALID_GENDERS.includes(lookingFor) || lookingFor === 'everyone' ? lookingFor : 'everyone';
+        const userIsPremium = isPremium === true;
+        const userCountries: string[] = Array.isArray(countries)
+          ? countries.slice(0, MAX_COUNTRIES).map((c: unknown) => sanitizeString(c, MAX_COUNTRY_LENGTH)).filter(Boolean)
+          : [];
         const userCountry = userCountries.length > 0 ? userCountries[0] : null;
-        const userVibe: string | null = vibe || null;
+        const userVibe: string | null = VALID_VIBES.includes(vibe) ? vibe : null;
 
         // Helper to check gender compatibility
         const isGenderMatch = (queueUser: any) => {
@@ -292,12 +309,15 @@ serve(async (req) => {
           throw new Error('Message too long (max 5000 characters)');
         }
 
+        // Sanitize HTML tags from message content
+        const sanitizedMessage = message.trim().replace(/<[^>]*>/g, '');
+
         const { data, error } = await supabase
           .from('messages')
           .insert({
             room_id: roomId,
             sender_id: userId,
-            content: message
+            content: sanitizedMessage
           })
           .select()
           .single();
