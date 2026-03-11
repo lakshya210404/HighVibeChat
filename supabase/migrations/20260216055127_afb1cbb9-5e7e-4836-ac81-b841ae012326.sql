@@ -1,0 +1,1 @@
+ALTER TABLE public.confessions ADD COLUMN title text;
